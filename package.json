@@ -3,11 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev:react": "vite",
+    "dev:electron": "npm run transpile:electron && cross-env NODE_ENV=development electron .",
+    "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\"",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "transpile:electron": "tsc --project src/electron/tsconfig.json",
+    "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
+    "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
+    "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --x64"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -18,6 +25,10 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
