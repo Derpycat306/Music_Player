@@ -1,6 +1,7 @@
 {
     "appId": "com.lj.musicplayer",
     "files": ["dist-electron", "dist-react"],
+    "extraResources": ["dist-electron/electron/preload.cjs"],
     "icon": "./assets/icon.png",
     "mac": {
         "target": "dmg"

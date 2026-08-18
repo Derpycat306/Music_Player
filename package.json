@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev:react": "vite",
     "dev:electron": "npm run transpile:electron && cross-env NODE_ENV=development electron .",
@@ -29,7 +29,9 @@
     "cross-env": "^10.1.0",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",
+    "music-metadata": "^11.14.0",
     "oxlint": "^1.75.0",
+    "react-router-dom": "^7.18.2",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
   }
