@@ -7,6 +7,11 @@ function MainPanel(){
             //@ts-ignore
             window.electron.setFolder(`C:\\Web Development\\jsprojects\\Electron\\Music_Player\\MusicSource`);
         }}>use testing directory</button>
+        <button onClick={() => {
+                //@ts-ignore
+                window.electron.selectFolder()
+            }
+        }>Select Folder</button>
     </div>
 }
 

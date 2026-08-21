@@ -4,7 +4,8 @@
     background-color: var(--sidebar);
     padding: 40px;
     padding-left: 20px;
-    overflow: auto
+    padding-right: 0;
+    overflow-y: scroll;
 }
 
 .children{
@@ -14,4 +15,5 @@
     color: var(--text-muted);
     font-family: Inter, system-ui, sans-serif;
     user-select: none;
+    height: 100%;
 }
