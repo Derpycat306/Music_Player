@@ -1,0 +1,16 @@
+.module{
+    width: 50%;
+    height: 100%;
+    background-color: var(--sidebar);
+    padding: 40px;
+    overflow: auto
+}
+
+.children{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--text-muted);
+    font-family: Inter, system-ui, sans-serif;
+    user-select: none;
+}

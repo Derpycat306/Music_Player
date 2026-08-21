@@ -1,0 +1,16 @@
+.main{
+    height: 50px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+.info,
+.controls
+{
+    flex: 1
+}
+
+.controls{
+    flex: 1
+}

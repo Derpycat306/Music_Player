@@ -1,8 +1,9 @@
 import fs from "fs"
-import { BrowserWindow, WebContents, ipcMain } from "electron"
+import { BrowserWindow, WebContents, dialog, ipcMain } from "electron"
 import {parseFile} from "music-metadata"
 import {Song} from '../shared/types.js'
 import { mockSongs } from "./mockData.js"
+import path from "path"
 
 let filePath :string | null = null
 let watcher : fs.FSWatcher | null = null
@@ -13,6 +14,7 @@ export function setFilepath(fp: string | null){
     watcher?.close();
 
     if(fp !== null){
+        ("setting filepath: " + fp)
         watcher = fs.watch(fp, (eventType, filename) => {
             readFiles();
         })
@@ -25,29 +27,89 @@ ipcMain.on("list:set-path", (_, path) => {
     setFilepath(path)
 })
 
-async function parseSong(fp: string): Promise<Song> {
+ipcMain.on("list:select-folder", async () => {
+    const result = await dialog.showOpenDialog({properties: ["openDirectory"]})
+
+    if(result.canceled || result.filePaths.length === 0){
+        setFilepath(null)
+    }
+
+    setFilepath(result.filePaths[0])
+})
+
+async function parseSong(fp: string, artist?: string, album?: string): Promise<Song> {
     const metadata = await parseFile(fp);
 
     return{
         id: fp,
-        title: metadata.common.title ?? fp,
-        artist: metadata.common.artist ?? "Unknown Artist",
-        album: metadata.common.album ?? "",
+        title: metadata.common.title ?? path.basename(fp),
+        artist: artist ?? "Unknown Artist",
+        album: album ?? "",
         trackNumber: metadata.common.track.no ?? 0,
         path: fp,
         duration: metadata.format.duration ?? 0
     }
 }
 
-function parseSongs(path: String): Song[] {
-    let list : Song[] = mockSongs
-    return list
+const AUDIO_EXTENSIONS = new Set([
+    ".mp3",
+    ".flac",
+    ".wav",
+    ".ogg",
+    ".m4a",
+    ".aac",
+    ".opus"
+]);
+
+function isAudioFile(filename: string): boolean {
+    return AUDIO_EXTENSIONS.has(
+        path.extname(filename).toLowerCase()
+    );
+}
+
+async function scanDirectory(
+    dir: string,
+    depth:number,
+    artist?:string,
+    album?:string,
+){
+    const entries = await fs.promises.readdir(dir, {withFileTypes: true})
+
+    const songs: Song[] = [];
+
+    for (const entry of entries){
+        const fullPath = path.join(dir, entry.name)
+
+        if(entry.isDirectory()){
+            switch(depth){
+                case 0:
+                    songs.push(
+                        ...(await scanDirectory(fullPath, 1, entry.name, album))
+                    )
+                    break
+                case 1:
+                    songs.push(
+                        ...(await scanDirectory(fullPath, 2, artist, entry.name))
+                    )
+                    break
+
+                default:
+                    songs.push(
+                        ...(await scanDirectory(fullPath, depth+1, artist, album))
+                    )
+            }
+        }else if(isAudioFile(entry.name)) {
+            songs.push(await parseSong(fullPath, artist, album))
+        }
+    }
+
+    return songs;
 }
 
 export async function readFiles(){
     if(mainWindow){
         if (filePath !== null){
-            const files = parseSongs(filePath);
+            const files = await scanDirectory(filePath, 0);
             mainWindow.webContents.send("list:update", files);
         }else{
             mainWindow.webContents.send("list:update", mockSongs);

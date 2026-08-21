@@ -1,0 +1,61 @@
+.item{
+    position: relative;
+    display: flex;
+    background-color: var(--background);
+    min-height: 30px;
+    align-items: center;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px;
+    cursor: pointer;
+    min-height: 50px;
+    display: flex;
+    flex-direction: row;
+    box-shadow: 4px 8px 8px #0a0a0a;
+    transition: transform 0.3s ease;
+}
+
+.icon, .arrow{
+    flex: 0 0 auto;
+}
+
+.name{
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+.arrow{
+    display: inline-block;
+    transition: transform 250ms ease;
+}
+
+.arrow.open{
+    transform: rotate(90deg);
+}
+
+.item:hover{
+}
+
+.children {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 200ms ease;
+}
+
+.children.open {
+    grid-template-rows: 1fr;
+}
+
+.children > div {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.innerChildren{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 20px;
+    min-width: 0px;
+}

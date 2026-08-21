@@ -4,8 +4,12 @@ import type { Song } from '../shared/types'
 const electron = require('electron')
 
 electron.contextBridge.exposeInMainWorld("electron", {
-    setFilePath: (path: string) => {
+    setFolder: (path: string) => {
         ipcRenderer.send("list:set-path", path)
+    },
+
+    selectFolder: () => {
+        ipcRenderer.send("list:select-folder")
     },
 
     subscribe: (callback: (files: Song[]) => void) => {

@@ -32,7 +32,7 @@ export const mockSongs: Song[] = [
         id: "4",
         title: "Final Track",
         artist: "Another Artist",
-        album: "Another Album",
+        album: "Another Album2",
         trackNumber: 2,
         path: "C:/Music/Another Artist/Another Album/02 Final Track.flac",
         duration: 302
