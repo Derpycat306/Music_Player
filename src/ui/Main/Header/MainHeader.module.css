@@ -1,0 +1,10 @@
+
+.main{
+    height: 40px;
+    background-color: var(--surface);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+}

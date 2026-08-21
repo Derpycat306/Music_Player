@@ -17,6 +17,7 @@
     "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --x64"
   },
   "dependencies": {
+    "iconoir-react": "^7.12.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

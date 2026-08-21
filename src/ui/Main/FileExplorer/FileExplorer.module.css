@@ -1,8 +1,9 @@
 .module{
-    width: 50%;
+    width: 40%;
     height: 100%;
     background-color: var(--sidebar);
     padding: 40px;
+    padding-left: 20px;
     overflow: auto
 }
 

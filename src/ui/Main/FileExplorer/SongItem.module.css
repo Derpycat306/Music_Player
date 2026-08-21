@@ -1,3 +1,8 @@
 
 .item {
+    position: relative;
+    display: flex;
+    background-color: var(--background);
+    min-height: 30px;
+    cursor: pointer;
 }

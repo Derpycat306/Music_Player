@@ -1,13 +1,13 @@
-import styles from './SongView.module.css'
+import styles from './MainPanel.module.css'
 
-function SongView(){
+function MainPanel(){
     return <div className={styles.main}>
-        <h1>Song View</h1>
+        <h1>Main Home Page</h1>
         <button onClick={() => {
             //@ts-ignore
             window.electron.setFolder(`C:\\Web Development\\jsprojects\\Electron\\Music_Player\\MusicSource`);
-        }}> change directory</button>
+        }}>use testing directory</button>
     </div>
 }
 
-export default SongView
+export default MainPanel

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import type { Song } from "../../shared/types";
 import FileExplorer from "./FileExplorer/FileExplorer";
 import styles from './MainWindow.module.css'
-import SongView from "./SongView/SongView";
+import MainPanel from "./MainPanel/MainPanel";
 import MainHeader from "./Header/MainHeader";
 import PlayBar from "./PlayBar/PlayBar";
 
@@ -22,7 +22,7 @@ function MainWindow() {
 
             <div className={styles.main}>
                 <FileExplorer songs={songs}/>
-                <SongView />
+                <MainPanel />
             </div>
 
             <PlayBar />

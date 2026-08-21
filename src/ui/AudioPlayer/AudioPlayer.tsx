@@ -96,6 +96,7 @@ export function PlayerProvider({children}: PropsWithChildren){
         const newVolume = Math.max(0, Math.min(volume, 1))
 
         audio.volume = newVolume
+
         setCurrentVolume(newVolume)
     }
 
