@@ -1,93 +1,102 @@
-import type { Song } from "../../../shared/types";
-import styles from './FileExplorer.module.css'
+import styles from "./FileExplorer.module.css";
 import ArtistItem from "./ArtistItem";
 import SongItem from "./SongItem";
+import { usePlayer } from "../../AudioPlayer/AudioPlayer";
+import { useMemo } from "react";
 
-export interface Folder{
-    artists: Artist[];
+export interface Folder {
+    artists: ArtistListing[];
     songs: Song[];
 }
 
-export interface Artist{
+export interface ArtistListing {
     id: string;
     name: string;
-    albums: Album[];
+    albums: AlbumListing[];
     songs: Song[];
 }
 
-export interface Album{
+export interface AlbumListing {
     id: string;
     name: string;
     art: string | null;
     songs: Song[];
 }
 
-function build(songs: Song[]): Folder{
+function build(songs: Song[], covers: AlbumCover[]): Folder {
     const root: Folder = {
         artists: [],
-        songs: []
-    }
+        songs: [],
+    };
 
-    for(const song of songs){
-        if(song.artist === null){
-            root.songs.push(song)
-            continue
+    for (const song of songs) {
+        if (song.artist === null) {
+            root.songs.push(song);
+            continue;
         }
 
         let artistFolder = root.artists.find(
-            folder => folder.name === song.artist
-        )
+            (folder) => folder.name === song.artist,
+        );
 
-        if(artistFolder === undefined){
+        if (artistFolder === undefined) {
             artistFolder = {
                 id: `artist:${song.artist}`,
                 name: song.artist,
                 albums: [],
-                songs: []
-            }
+                songs: [],
+            };
 
-            root.artists.push(artistFolder)
+            root.artists.push(artistFolder);
         }
 
-        if(song.album){
+        if (song.album) {
             let albumFolder = artistFolder.albums.find(
-                folder => folder.name === song.album
-            )
+                (folder) => folder.name === song.album,
+            );
 
-            if(albumFolder === undefined){
+            if (albumFolder === undefined) {
                 albumFolder = {
                     id: `album:${song.album}`,
                     name: song.album,
                     art: null,
-                    songs: []
-                }
+                    songs: [],
+                };
 
-                artistFolder.albums.push(albumFolder)
+                artistFolder.albums.push(albumFolder);
             }
 
-            albumFolder.songs.push(song)
-        }else{
-            artistFolder.songs.push(song)
+            albumFolder.songs.push(song);
+        } else {
+            artistFolder.songs.push(song);
         }
     }
 
-    return root
+    return root;
 }
 
-function FileExplorer({songs}: {songs: Song[]}){
-    let folder = build(songs)
+function FileExplorer() {
+    const { songs, covers } = usePlayer();
 
-    return <div className={styles.module}>
-        <div className={styles.children}>
-            {folder.artists.map(artist => (
-                <ArtistItem key={artist.id} artist={artist}/>
-            ))}
+    const folder = useMemo(() => {
+        return build(songs, covers);
+    }, []);
 
-            {folder.songs.map(song => (
-                <SongItem key={song.id} song={song} />
-            ))}
+    console.log(songs);
+
+    return (
+        <div className={styles.module}>
+            <div className={styles.children}>
+                {folder.artists.map((artist) => (
+                    <ArtistItem key={artist.id} artist={artist} />
+                ))}
+
+                {folder.songs.map((song) => (
+                    <SongItem key={song.id} song={song} />
+                ))}
+            </div>
         </div>
-    </div>
+    );
 }
 
-export default FileExplorer
+export default FileExplorer;

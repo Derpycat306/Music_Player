@@ -1,30 +1,31 @@
-import {ipcRenderer} from 'electron'
-import type { Song } from '../shared/types'
+import { ipcRenderer } from "electron";
 
-const electron = require('electron')
+const electron = require("electron");
 
 electron.contextBridge.exposeInMainWorld("electron", {
     setFolder: (path: string) => {
-        ipcRenderer.send("list:set-path", path)
+        ipcRenderer.send("list:set-path", path);
     },
 
     selectFolder: () => {
-        ipcRenderer.send("list:select-folder")
+        ipcRenderer.send("list:select-folder");
     },
 
-    subscribe: (callback: (files: Song[]) => void) => {
+    subscribe: (
+        callback: (data: { songs: Song[]; albums: AlbumCover[] }) => void,
+    ) => {
         const listener = (
             _event: Electron.IpcRendererEvent,
-            files: Song[]
+            files: { songs: Song[]; albums: AlbumCover[] },
         ) => {
-            callback(files)
-        }
+            callback(files);
+        };
 
         ipcRenderer.on("list:update", listener);
-        ipcRenderer.send("list:reload")
+        ipcRenderer.send("list:reload");
 
         return () => {
             ipcRenderer.removeListener("list:update", listener);
-        }
-    }
-})
+        };
+    },
+});

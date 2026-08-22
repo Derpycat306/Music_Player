@@ -1,5 +1,4 @@
-
-.main{
+.main {
     height: 50px;
     padding-left: 10px;
     padding-right: 10px;
@@ -12,38 +11,46 @@
     font-size: 2em;
 }
 
-.left, .right, .center{
+.left,
+.right,
+.center {
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.left, .right{
-    flex: 0 0 auto
+.left,
+.right {
+    flex: 0 0 auto;
 }
 
-.center{
+.center {
     flex: 1;
     text-align: center;
     min-width: 0;
 }
 
-.settings{
+.settingsLink,
+.settings {
     height: 30px;
+}
+
+.settings {
     transition: scale 0.5s ease;
     cursor: pointer;
+    color: white;
 }
 
-.settings:hover{
+.settings:hover {
     scale: 1.2;
-    animation: spin 5s infinite cubic-bezier(0,0,0,0)
+    animation: spin 5s infinite cubic-bezier(0, 0, 0, 0);
 }
 
-@keyframes spin{
-    from{
-        transform: rotate(0deg)
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
     }
-    to{
-        transform: rotate(360deg)
+    to {
+        transform: rotate(360deg);
     }
 }

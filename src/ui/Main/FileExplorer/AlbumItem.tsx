@@ -1,15 +1,19 @@
-import type { Album } from "./FileExplorer";
+import type { AlbumListing } from "./FileExplorer";
 import FolderItem from "./FolderItem";
 import SongItem from "./SongItem";
 
-function AlbumItem({album}: {album: Album}){
-    return(
-        <FolderItem key={album.name} name={album.name} children={[
-            ...album.songs.map(song => (
-                <SongItem key={song.id} song={song}/>
-            ))
-        ]}/>
-    )
+function AlbumItem({ album }: { album: AlbumListing }) {
+    return (
+        <FolderItem
+            key={album.name}
+            name={album.name}
+            children={[
+                ...album.songs.map((song) => (
+                    <SongItem key={song.id} song={song} />
+                )),
+            ]}
+        />
+    );
 }
 
-export default AlbumItem
+export default AlbumItem;

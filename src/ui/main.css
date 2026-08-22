@@ -1,8 +1,7 @@
 html,
 body,
 text,
-#root
-{
+#root {
     height: 100%;
     width: 100%;
     margin: 0 !important;
@@ -20,7 +19,6 @@ text,
     --sidebar: #121214;
     --surface: #202225;
     --surface-hover: #2a2d31;
-    --border: #303238;
 
     --text: #f2f3f5;
     --text-muted: #a5a7ab;
@@ -29,5 +27,5 @@ text,
 
     interpolate-size: allow-keywords;
 
-    color: var(--text)
+    color: var(--text);
 }

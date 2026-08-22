@@ -1,4 +1,4 @@
-.item{
+.item {
     position: relative;
     display: flex;
     background-color: var(--background);
@@ -15,27 +15,28 @@
     transition: transform 0.3s ease;
 }
 
-.icon, .arrow{
+.icon,
+.arrow {
     flex: 0 0 auto;
 }
 
-.name{
+.name {
     flex: 1;
     text-align: center;
     min-width: 0;
 }
 
-.arrow{
+.arrow {
     display: inline-block;
     transition: transform 250ms ease;
 }
 
-.arrow.open{
+.arrow.open {
     transform: rotate(90deg);
 }
 
-.item:hover{
-    transform:scale()
+.item:hover {
+    transform: scale();
 }
 
 .children {
@@ -55,7 +56,7 @@
     min-height: 0;
 }
 
-.innerChildren{
+.innerChildren {
     display: flex;
     flex-direction: column;
     padding-left: 10px;

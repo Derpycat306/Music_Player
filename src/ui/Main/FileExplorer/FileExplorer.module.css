@@ -1,4 +1,4 @@
-.module{
+.module {
     width: 40%;
     height: 100%;
     background-color: var(--sidebar);
@@ -8,7 +8,7 @@
     overflow-y: scroll;
 }
 
-.children{
+.children {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -16,4 +16,16 @@
     font-family: Inter, system-ui, sans-serif;
     user-select: none;
     height: 100%;
+}
+
+::-webkit-scrollbar {
+    background-color: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--surface-hover);
 }

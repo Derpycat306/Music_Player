@@ -1,127 +1,134 @@
-import fs from "fs"
-import { BrowserWindow, WebContents, dialog, ipcMain } from "electron"
-import {parseFile} from "music-metadata"
-import {Song} from '../shared/types.js'
-import { mockSongs } from "./mockData.js"
-import path from "path"
+import fs from "fs";
+import { BrowserWindow, WebContents, dialog, ipcMain } from "electron";
+import { parseFile } from "music-metadata";
+import path from "path";
+import { isAudioFile, isImageFile } from "./extentionHandler.js";
 
-let filePath :string | null = null
-let watcher : fs.FSWatcher | null = null
+let filePath: string | null = null;
+let watcher: fs.FSWatcher | null = null;
 let mainWindow: BrowserWindow | null = null;
 
-export function setFilepath(fp: string | null){
+export function setFilepath(fp: string | null) {
     filePath = fp;
     watcher?.close();
 
-    if(fp !== null){
-        ("setting filepath: " + fp)
+    if (fp !== null) {
+        "setting filepath: " + fp;
         watcher = fs.watch(fp, (eventType, filename) => {
             readFiles();
-        })
+        });
     }
 
     readFiles();
 }
 
 ipcMain.on("list:set-path", (_, path) => {
-    setFilepath(path)
-})
+    setFilepath(path);
+});
 
 ipcMain.on("list:select-folder", async () => {
-    const result = await dialog.showOpenDialog({properties: ["openDirectory"]})
+    const result = await dialog.showOpenDialog({
+        properties: ["openDirectory"],
+    });
 
-    if(result.canceled || result.filePaths.length === 0){
-        setFilepath(null)
+    if (result.canceled || result.filePaths.length === 0) {
+        return;
     }
 
-    setFilepath(result.filePaths[0])
-})
+    setFilepath(result.filePaths[0]);
+});
 
-async function parseSong(fp: string, artist?: string, album?: string): Promise<Song> {
+async function parseSong(
+    fp: string,
+    artist?: string,
+    album?: string,
+): Promise<Song> {
     const metadata = await parseFile(fp);
 
-    return{
+    return {
         id: fp,
         title: metadata.common.title ?? path.basename(fp),
         artist: artist ?? "Unknown Artist",
         album: album ?? "",
         trackNumber: metadata.common.track.no ?? 0,
         path: fp,
-        duration: metadata.format.duration ?? 0
-    }
-}
-
-const AUDIO_EXTENSIONS = new Set([
-    ".mp3",
-    ".flac",
-    ".wav",
-    ".ogg",
-    ".m4a",
-    ".aac",
-    ".opus"
-]);
-
-function isAudioFile(filename: string): boolean {
-    return AUDIO_EXTENSIONS.has(
-        path.extname(filename).toLowerCase()
-    );
+        duration: metadata.format.duration ?? 0,
+    };
 }
 
 async function scanDirectory(
     dir: string,
-    depth:number,
-    artist?:string,
-    album?:string,
-){
-    const entries = await fs.promises.readdir(dir, {withFileTypes: true})
+    depth: number,
+    artist?: string,
+    album?: string,
+): Promise<{ songs: Song[]; covers: AlbumCover[] }> {
+    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
 
     const songs: Song[] = [];
+    const covers: AlbumCover[] = [];
 
-    for (const entry of entries){
-        const fullPath = path.join(dir, entry.name)
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
 
-        if(entry.isDirectory()){
-            switch(depth){
+        if (entry.isDirectory()) {
+            switch (depth) {
                 case 0:
                     songs.push(
                         ...(await scanDirectory(fullPath, 1, entry.name, album))
-                    )
-                    break
+                            .songs,
+                    );
+                    break;
                 case 1:
                     songs.push(
-                        ...(await scanDirectory(fullPath, 2, artist, entry.name))
-                    )
-                    break
+                        ...(
+                            await scanDirectory(fullPath, 2, artist, entry.name)
+                        ).songs,
+                    );
+                    break;
 
                 default:
                     songs.push(
-                        ...(await scanDirectory(fullPath, depth+1, artist, album))
-                    )
+                        ...(
+                            await scanDirectory(
+                                fullPath,
+                                depth + 1,
+                                artist,
+                                album,
+                            )
+                        ).songs,
+                    );
             }
-        }else if(isAudioFile(entry.name)) {
-            songs.push(await parseSong(fullPath, artist, album))
+        } else if (isAudioFile(entry.name)) {
+            songs.push(await parseSong(fullPath, artist, album));
+        } else if (isImageFile(entry.name)) {
+            if (album && !covers.find((a) => a.title === album)) {
+                covers.push({ id: album, title: album, coverPath: fullPath });
+            }
         }
     }
 
-    return songs;
+    return { songs, covers };
 }
 
-export async function readFiles(){
-    if(mainWindow){
-        if (filePath !== null){
+export async function readFiles() {
+    if (mainWindow) {
+        if (filePath !== null) {
             const files = await scanDirectory(filePath, 0);
             mainWindow.webContents.send("list:update", files);
-        }else{
-            mainWindow.webContents.send("list:update", mockSongs);
-        } 
-    }else{
-        console.log("Error, could not load window")
+        } else {
+            mainWindow.webContents.send("list:update", {
+                songs: [],
+                covers: [],
+            });
+        }
+    } else {
+        console.error("Could not load window");
     }
 }
 
-ipcMain.on("list:reload", readFiles)
+ipcMain.on("list:reload", readFiles);
 
-export function initFileReader(window: BrowserWindow, fp: string | null){
+export function initFileReader(window: BrowserWindow, fp: string | null) {
     mainWindow = window;
     setFilepath(fp);
 }

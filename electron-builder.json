@@ -10,7 +10,7 @@
         "target": "AppImage",
         "category": "Utility"
     },
-    "win":{
+    "win": {
         "target": ["portable", "msi"]
     }
 }

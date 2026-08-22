@@ -1,7 +1,7 @@
 import { protocol } from "electron";
-import fs from "fs"
+import fs from "fs";
 
-export function initProtocol(){
+export function initProtocol() {
     protocol.handle("music", async (request) => {
         const url = new URL(request.url);
         const filePath = url.searchParams.get("path");
@@ -24,8 +24,8 @@ export function initProtocol(){
                     headers: {
                         "Content-Type": "audio/mpeg",
                         "Content-Length": fileSize.toString(),
-                        "Accept-Ranges": "bytes"
-                    }
+                        "Accept-Ranges": "bytes",
+                    },
                 });
             }
 
@@ -33,14 +33,12 @@ export function initProtocol(){
 
             if (!match) {
                 return new Response("Invalid range", {
-                    status: 416
+                    status: 416,
                 });
             }
 
             const start = Number(match[1]);
-            const requestedEnd = match[2]
-                ? Number(match[2])
-                : fileSize - 1;
+            const requestedEnd = match[2] ? Number(match[2]) : fileSize - 1;
 
             const end = Math.min(requestedEnd, fileSize - 1);
 
@@ -48,8 +46,8 @@ export function initProtocol(){
                 return new Response(null, {
                     status: 416,
                     headers: {
-                        "Content-Range": `bytes */${fileSize}`
-                    }
+                        "Content-Range": `bytes */${fileSize}`,
+                    },
                 });
             }
 
@@ -60,12 +58,7 @@ export function initProtocol(){
             const handle = await fs.promises.open(filePath, "r");
 
             try {
-                await handle.read(
-                    buffer,
-                    0,
-                    chunkSize,
-                    start
-                );
+                await handle.read(buffer, 0, chunkSize, start);
             } finally {
                 await handle.close();
             }
@@ -76,15 +69,14 @@ export function initProtocol(){
                     "Content-Type": "audio/mpeg",
                     "Content-Length": chunkSize.toString(),
                     "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-                    "Accept-Ranges": "bytes"
-                }
+                    "Accept-Ranges": "bytes",
+                },
             });
-
         } catch (error) {
             console.error("Music protocol error:", error);
 
             return new Response("File error", {
-                status: 500
+                status: 500,
             });
         }
     });
