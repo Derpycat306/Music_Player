@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {useState } from "react";
 import styles from "./FolderItem.module.css";
 
 interface FolderItemProps {
     name: string;
-    children?: React.ReactNode[];
+    children?: React.ReactNode[] | null;
     icon?: React.ReactNode | null;
 }
 
@@ -13,16 +13,16 @@ function FolderItem({ name, children, icon }: FolderItemProps) {
     return (
         <div>
             <div
-                className={styles.item}
-                onClick={() => setExpand((prev) => !prev)}
+                className={`${styles.item} ${(children && children.length>0) ? styles.clickable : ""}`}
+                onClick={() => children && children.length>0 && setExpand((prev) => !prev)}
             >
                 <div className={styles.icon}>{icon ? icon : ""}</div>
                 <span className={styles.name}>{name}</span>
-                <span
+                {children && children.length>0 && <span
                     className={`${styles.arrow} ${expand ? styles.open : ""}`}
                 >
                     {"▶"}
-                </span>
+                </span>}
             </div>
 
             <div className={`${styles.children} ${expand ? styles.open : ""}`}>

@@ -22,10 +22,26 @@ electron.contextBridge.exposeInMainWorld("electron", {
         };
 
         ipcRenderer.on("list:update", listener);
-        ipcRenderer.send("list:reload");
 
         return () => {
             ipcRenderer.removeListener("list:update", listener);
         };
+    },
+
+    getSongList: () => ipcRenderer.invoke("list:get"),
+
+    settings: {
+        set: (save: Settings) => ipcRenderer.send("save:settings-set", save),
+        get: () => ipcRenderer.invoke("save:settings-get")
+    },
+
+    favorites: {
+        set: (save: string[]) => ipcRenderer.send("save:favorites-set", save),
+        get: () => ipcRenderer.invoke("save:favorites-get")
+    },
+
+    playlists: {
+        set: (save: Playlist[]) => ipcRenderer.send("save:playlists-set", save),
+        get: () => ipcRenderer.invoke("save:playlists-get")
     },
 });

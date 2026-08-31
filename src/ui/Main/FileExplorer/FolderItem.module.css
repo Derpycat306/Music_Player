@@ -3,16 +3,18 @@
     display: flex;
     background-color: var(--background);
     min-height: 30px;
-    width: 90%;
     align-items: center;
     border-radius: 5px;
     padding: 10px;
-    cursor: pointer;
     min-height: 50px;
     display: flex;
     flex-direction: row;
     box-shadow: 4px 8px 8px #0a0a0a;
     transition: transform 0.3s ease;
+}
+
+.clickable{
+    cursor: pointer;
 }
 
 .icon,
@@ -59,6 +61,5 @@
 .innerChildren {
     display: flex;
     flex-direction: column;
-    padding-left: 10px;
     min-width: 0px;
 }

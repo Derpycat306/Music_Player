@@ -5,11 +5,13 @@
     align-items: center;
     background-color: var(--surface);
     padding: 10px;
+    width: 100%;
 }
 
 .info,
 .volume {
     flex: 0 0 auto;
+    min-width: 0px;
 }
 
 .main > * {

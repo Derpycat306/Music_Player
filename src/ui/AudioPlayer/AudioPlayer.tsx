@@ -14,6 +14,8 @@ interface PlayerContextType {
     pause: () => void;
     seek: (time: number) => void;
     setVolume: (volume: number) => void;
+    isFavorite: (key: string) => boolean;
+    toggleFavorite: (key: string) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -28,10 +30,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [volume, setCurrentVolume] = useState(1);
-
-    useEffect(() => {
-        console.log("songs state changed:", songs);
-    }, [songs, covers]);
+    const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
         console.log("received songs: ", data.songs);
@@ -60,12 +59,19 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         audio.addEventListener("ended", ended);
         let subscribe = window.electron.subscribe(updateDirectory);
 
+        const init = async () => {
+            updateDirectory(await window.electron.getSongList())
+        }
+
+        init()
+
         return () => {
             audio.removeEventListener("timeupdate", updateTime);
             audio.removeEventListener("loadedmetadata", updateDuration);
             audio.removeEventListener("ended", ended);
             subscribe;
         };
+
     }, []);
 
     async function playSong(song: Song) {
@@ -108,6 +114,25 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         setCurrentVolume(newVolume);
     }
 
+    function isFavorite(key: string): boolean{
+        return favorites.has(key)
+    }
+
+    function toggleFavorite(key: string) {
+        setFavorites(prev => {
+            const next = new Set(prev);
+
+            if(next.has(key)){
+                next.delete(key);
+            }else{
+                next.add(key);
+            }
+
+            return next;
+        })
+    }
+
+
     return (
         <PlayerContext.Provider
             value={{
@@ -122,6 +147,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 pause,
                 seek,
                 setVolume,
+                isFavorite,
+                toggleFavorite
             }}
         >
             {children}

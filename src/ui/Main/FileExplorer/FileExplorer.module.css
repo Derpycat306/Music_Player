@@ -2,13 +2,13 @@
     width: 40%;
     height: 100%;
     background-color: var(--sidebar);
-    padding: 40px;
-    padding-left: 20px;
-    padding-right: 0;
     overflow-y: scroll;
 }
 
 .children {
+    padding: 40px;
+    padding-left: 20px;
+    padding-right: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;

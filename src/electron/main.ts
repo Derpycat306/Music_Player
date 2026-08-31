@@ -2,8 +2,9 @@ import { app, BrowserWindow, ipcRenderer, net, protocol } from "electron";
 import path from "path";
 import { isDev } from "./utils.js";
 import { getPreloadPath } from "./pathResolve.js";
-import { initFileReader } from "./filereader.js";
+import { initFileReader as initSongFolderReader } from "./songFolderReader.js";
 import { initProtocol } from "./requestProtocol.js";
+import { savedData } from "./saveHandler.js";
 
 protocol.registerSchemesAsPrivileged([
     {
@@ -27,7 +28,8 @@ app.on("ready", () => {
         },
     });
 
-    initFileReader(mainWindow, null);
+    const settings = savedData.settings.load()
+    initSongFolderReader(mainWindow, settings.baseFolder);
 
     if (isDev()) {
         mainWindow.loadURL("http://localhost:5123");

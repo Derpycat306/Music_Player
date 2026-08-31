@@ -8,11 +8,12 @@ function App() {
     return (
         <BrowserRouter>
             <div className={styles.app}>
-                <Routes>
-                    <Route path="/" element={<MainWindow />} />
-                    <Route path="/settings" element={<SettingsMenu />} />
-                </Routes>
-
+                <div className={styles.content}>
+                    <Routes>
+                        <Route path="/" element={<MainWindow />} />
+                        <Route path="/settings" element={<SettingsMenu />} />
+                    </Routes>
+                </div>
                 <PlayBar />
             </div>
         </BrowserRouter>
