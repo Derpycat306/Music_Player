@@ -9,8 +9,10 @@ function SongItem({ song }: { song: Song }) {
             className={`${styles.item} ${isFavorite(song.id) ? styles.favorite : ""}`}
             onClick={() => {playSong(song)}}
             onMouseDown={(e) => {
-                if(e.button === 2)
-                e.preventDefault; toggleFavorite(song.id);
+                if(e.button === 2){
+                    e.preventDefault;
+                    toggleFavorite(song.id);
+                }
             }}
         >
             <div>{song.title}</div>

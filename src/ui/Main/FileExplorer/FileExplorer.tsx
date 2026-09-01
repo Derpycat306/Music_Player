@@ -2,8 +2,7 @@ import styles from "./FileExplorer.module.css";
 import ArtistItem from "./ArtistItem";
 import SongItem from "./SongItem";
 import { usePlayer } from "../../AudioPlayer/AudioPlayer";
-import { useMemo } from "react";
-import FolderItem from "./FolderItem";
+import { useMemo, useState } from "react";
 
 export interface Folder {
     artists: ArtistListing[];
@@ -78,36 +77,70 @@ function build(songs: Song[], covers: AlbumCover[]): Folder {
 
 function FileExplorer() {
     const { songs, covers, isFavorite} = usePlayer();
+    type View = "songs" | "favorites" | "playlists";
+    const [view, setView] = useState<View>("songs");
+    const [filter, setFilter] = useState<string | null>(null);
+
+    const filteredSongs: Song[] = useMemo(() => {
+        return !filter ? songs : 
+        songs.filter(song => {
+            return song.title.toLowerCase().includes(filter) ||
+            song.artist?.toLowerCase().includes(filter) ||
+            song.album?.toLowerCase().includes(filter);
+        })
+    }, [songs, filter])
 
     const folder = useMemo(() => {
-        return build(songs, covers);
-    }, [songs, covers]);
+        return build(
+            filteredSongs, 
+            covers);
+    }, [songs, covers, filter]);
 
-    console.log(songs);
+
+    const views = {
+        songs: <>{
+                ...folder.artists.map((artist) => (
+                    <ArtistItem key={artist.id} artist={artist} />
+                ))
+            }
+            {
+                ...folder.songs.map((song) => (
+                    <SongItem key={song.id} song={song} />
+                ))
+            }</>,
+
+        favorites: <>{
+            ...filteredSongs.filter((song) => isFavorite(song.id))
+                .map((song) => (
+                    <SongItem key={song.id} song={song} />
+                ))
+            }</>,
+        playlists: <></>               
+    }
 
     return (
         <div className={styles.module}>
+            <input type="text" className={styles.search}
+                placeholder={"search"}
+                onChange={(e) => {setFilter(e.target.value.toLowerCase())}}/>
+
+            <div className={styles.control}>
+                <button 
+                    aria-pressed={view === "songs"}
+                    onClick={() => setView("songs")}
+                    >Songs</button>
+                <button 
+                    aria-pressed={view === "favorites"}
+                    onClick={() => setView("favorites")}
+                    >Favorites</button>
+                <button 
+                    aria-pressed={view === "playlists"}
+                    onClick={() => setView("playlists")}
+                    >Playlists</button>
+            </div>
+
             <div className={styles.children}>
-                <FolderItem 
-                    name={"Songs"}
-                    children={[
-                        ...folder.artists.map((artist) => (
-                            <ArtistItem key={artist.id} artist={artist} />
-                        )),
-
-                        ...folder.songs.map((song) => (
-                            <SongItem key={song.id} song={song} />
-                        ))
-                    ]}/>
-
-                <FolderItem name={"Favorites"}
-                children={[
-                    ...songs.filter((song) => isFavorite(song.id))
-                        .map((song) => (
-                            <SongItem key={song.id} song={song} />
-                        ))
-                ]}/>
-                <FolderItem name={"Playlists"}/>
+                {views[view]}
             </div>
         </div>
     );

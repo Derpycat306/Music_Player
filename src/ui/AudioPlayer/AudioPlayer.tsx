@@ -33,7 +33,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
-        console.log("received songs: ", data.songs);
         setSongs(data.songs);
         setCovers(data.covers);
     }

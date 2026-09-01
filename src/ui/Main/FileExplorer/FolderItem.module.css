@@ -2,7 +2,6 @@
     position: relative;
     display: flex;
     background-color: var(--background);
-    min-height: 30px;
     align-items: center;
     border-radius: 5px;
     padding: 10px;
