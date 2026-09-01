@@ -25,19 +25,21 @@ interface Window {
         getSongList: () => Promise<{songs: Song[], covers: AlbumCover[]}>;
 
         settings: {
-            set: (save: Settings) => void;
-            get: () => Settings;
+            set: (save: Partial<Settings>) => void;
+            get: () => Promise<Settings>;
         };
 
         favorites: {
-            set: (save: string[]) => void;
-            get: () => string[];
+            set: (save: Partial<string[]>) => void;
+            get: () => Promise<string[]>;
         };
 
         playlists: {
-            set: (save: Playlist[]) => void;
-            get: () => Playlist[];
+            set: (save: Partial<Playlist[]>) => void;
+            get: () => Promise<Playlist[]>;
         };
+
+        subscribeToSave: (callback: () => Promise<void>) => void;
     };
 };
 

@@ -2,7 +2,6 @@
     width: 40%;
     height: 100%;
     background-color: var(--sidebar);
-    overflow-y: scroll;
 }
 
 .search{
@@ -46,10 +45,11 @@
     font-family: Inter, system-ui, sans-serif;
     user-select: none;
     height: 100%;
+    overflow-y: scroll;
 }
 
 ::-webkit-scrollbar {
-    background-color: var(--background);
+    background-color: var(--sidebar);
 }
 
 ::-webkit-scrollbar-thumb {

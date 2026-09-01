@@ -1,6 +1,16 @@
 import { ipcRenderer } from "electron";
 
 const electron = require("electron");
+const saveSubscribers = new Set<() => void | Promise<void>>()
+
+ipcRenderer.on("window-close", async () => {
+    await Promise.all(
+        [...saveSubscribers].map((callback) => {
+            callback();
+        })
+    )
+    ipcRenderer.send("save-complete")
+})
 
 electron.contextBridge.exposeInMainWorld("electron", {
     setFolder: (path: string) => {
@@ -43,5 +53,13 @@ electron.contextBridge.exposeInMainWorld("electron", {
     playlists: {
         set: (save: Playlist[]) => ipcRenderer.send("save:playlists-set", save),
         get: () => ipcRenderer.invoke("save:playlists-get")
+    },
+
+    subscribeToSave: (callback: () => void | Promise<void>) => {
+        saveSubscribers.add(callback)
+
+        return () => {
+            saveSubscribers.delete(callback);
+        }
     },
 });

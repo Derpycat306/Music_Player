@@ -31,6 +31,11 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [duration, setDuration] = useState(0);
     const [volume, setCurrentVolume] = useState(1);
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
+
+    const volumeRef = useRef(volume);
+    const playlistsRef = useRef(playlists);
+    const favoritesRef = useRef(favorites);
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
         setSongs(data.songs);
@@ -38,8 +43,30 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     }
 
     useEffect(() => {
+        volumeRef.current = volume;
+    }, [volume]);
+
+    useEffect(() => {
+        playlistsRef.current = playlists;
+    }, [playlists]);
+
+    useEffect(() => {
+        favoritesRef.current = favorites;
+    }, [favorites]);
+
+    useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
+
+        const init = async () => {
+            updateDirectory(await window.electron.getSongList())
+            let fav: string[] = await window.electron.favorites.get();
+            let settings: Settings | null = await window.electron.settings.get();
+
+            fav.forEach(song => favorites.add(song))
+            setVolume(settings.volume)
+        }
+        init();
 
         const updateTime = () => {
             setCurrentTime(audio.currentTime);
@@ -57,18 +84,18 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         audio.addEventListener("loadedmetadata", updateDuration);
         audio.addEventListener("ended", ended);
         let subscribe = window.electron.subscribe(updateDirectory);
+        let saveSubscribe = window.electron.subscribeToSave(async () => {
+            window.electron.settings.set({volume: volumeRef.current});
+            window.electron.favorites.set([...favoritesRef.current]);
+        })
 
-        const init = async () => {
-            updateDirectory(await window.electron.getSongList())
-        }
-
-        init()
 
         return () => {
             audio.removeEventListener("timeupdate", updateTime);
             audio.removeEventListener("loadedmetadata", updateDuration);
             audio.removeEventListener("ended", ended);
             subscribe;
+            saveSubscribe;
         };
 
     }, []);
@@ -130,7 +157,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             return next;
         })
     }
-
 
     return (
         <PlayerContext.Provider

@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS : Settings = {
 
 const dataPath = path.join(app.getPath("userData"), "Saved")
 
-await fs.mkdir(dataPath, {recursive: true}, (err) => {if(err) throw err})
+fs.mkdir(dataPath, {recursive: true}, (err) => {if(err) throw err})
 
 function formPath(filename: string) : string {
     return path.join(
@@ -19,7 +19,7 @@ function formPath(filename: string) : string {
 }
 
 class SaveObject<T>{
-    private data: T;
+    private saveData: T;
     private path: string;
 
     constructor(
@@ -31,28 +31,35 @@ class SaveObject<T>{
                 formPath(path),
                 "utf-8",
             )
-            this.data = JSON.parse(data)
+            this.saveData = JSON.parse(data)
         }catch(e){
-            this.data = defaultForm
-            this.save(this.data)
+            this.saveData = defaultForm
+            this.save(this.saveData)
         }
 
         ipcMain.on(`save:${path}-set`, (_, save) => {
             return this.save(save)
         });
 
-        ipcMain.on(`save:${path}-set`, (_) => {
+        ipcMain.handle(`save:${path}-get`, (_) => {
             return this.load()
         });
     }
 
     public save(newData: Partial<T>) : boolean {
-        this.data = {...this.data, ...newData}
+        if (Array.isArray(newData)) {
+            this.saveData = newData as T;
+        } else {
+            this.saveData = {
+                ...this.saveData,
+                ...newData
+            };
+        }
 
         try{
             fs.writeFileSync(
                 formPath(this.path), 
-                JSON.stringify(this.data, null, 2), 
+                JSON.stringify(this.saveData, null, 2), 
                 "utf-8"
             );
         }catch{
@@ -63,7 +70,7 @@ class SaveObject<T>{
     }
 
     public load() : T {
-        return this.data
+        return this.saveData
     }
 }
 
@@ -71,4 +78,19 @@ export const savedData = {
     settings: new SaveObject<Settings>("settings", DEFAULT_SETTINGS),
     playlists: new SaveObject<Playlist[]>("playlists", []),
     favorites: new SaveObject<string[]>("favorites", []),
+}
+
+const handlers = new Set<() => Promise<void>>(); 
+
+export function saveSubscribe(handler: () => Promise<void>){
+    handlers.add(handler);
+
+    return handlers.delete(handler);
+}
+ipcMain.on("save:new-handler", (_, handler) => saveSubscribe(handler))
+
+export async function saveAll() {
+    await Promise.all(
+        [...handlers].map(handler => handler())
+    )
 }

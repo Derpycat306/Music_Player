@@ -1,10 +1,10 @@
-import { app, BrowserWindow, ipcRenderer, net, protocol } from "electron";
+import { app, BrowserWindow, ipcMain, ipcRenderer, net, protocol } from "electron";
 import path from "path";
 import { isDev } from "./utils.js";
 import { getPreloadPath } from "./pathResolve.js";
 import { initFileReader as initSongFolderReader } from "./songFolderReader.js";
 import { initProtocol } from "./requestProtocol.js";
-import { savedData } from "./saveHandler.js";
+import { saveAll, savedData } from "./saveHandler.js";
 
 protocol.registerSchemesAsPrivileged([
     {
@@ -38,4 +38,17 @@ app.on("ready", () => {
             path.join(app.getAppPath(), "/dist-react/index.html"),
         );
     }
+
+    let isClosing = false
+
+    mainWindow.on("close", async (event) => {
+        if(isClosing)return;
+        event.preventDefault();
+        mainWindow.webContents.send("window-close")
+    })
+
+    ipcMain.once("save-complete", () => {
+        isClosing = true
+        mainWindow.close();
+    })
 });
