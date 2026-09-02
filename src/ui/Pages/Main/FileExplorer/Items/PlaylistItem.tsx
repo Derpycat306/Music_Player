@@ -1,5 +1,5 @@
 import FolderItem from "./FolderItem";
-import {usePlayer} from "../../../AudioPlayer/AudioPlayer";
+import {usePlayer} from "../../../../AudioPlayer/AudioPlayer";
 import SongItem from "./Songs/SongItem";
 
 function AlbumItem({ playlist }: { playlist: Playlist }) {

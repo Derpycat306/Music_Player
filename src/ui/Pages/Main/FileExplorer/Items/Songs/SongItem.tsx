@@ -1,6 +1,6 @@
 import styles from "./SongItem.module.css";
 import {useState, useEffect} from "react";
-import { usePlayer } from "../../../../AudioPlayer/AudioPlayer";
+import { usePlayer } from "../../../../../AudioPlayer/AudioPlayer";
 import SongContext from "./SongContext";
 
 function SongItem({ song, queue }: { song: Song; queue?: Song[] }) {

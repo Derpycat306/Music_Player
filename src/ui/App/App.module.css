@@ -1,0 +1,17 @@
+.app {
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.app > PlayBar {
+    flex: 0 0 auto;
+}
