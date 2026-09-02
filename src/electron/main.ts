@@ -1,10 +1,10 @@
-import { app, BrowserWindow, ipcMain, ipcRenderer, net, protocol } from "electron";
+import { app, BrowserWindow, ipcMain, protocol } from "electron";
 import path from "path";
 import { isDev } from "./utils.js";
 import { getPreloadPath } from "./pathResolve.js";
 import { initFileReader as initSongFolderReader } from "./songFolderReader.js";
 import { initProtocol } from "./requestProtocol.js";
-import { saveAll, savedData } from "./saveHandler.js";
+import { savedData } from "./saveHandler.js";
 
 protocol.registerSchemesAsPrivileged([
     {

@@ -35,12 +35,9 @@
 }
 
 .children {
-    padding: 40px;
-    padding-left: 20px;
-    padding-right: 20px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
     color: var(--text-muted);
     font-family: Inter, system-ui, sans-serif;
     user-select: none;

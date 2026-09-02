@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import MainWindow from "./Main/MainWindow.tsx";
 import SettingsMenu from "./Settings/SettingsMenu.tsx";
 import styles from "./App.module.css";
@@ -6,7 +6,7 @@ import PlayBar from "./Main/PlayBar/PlayBar.tsx";
 
 function App() {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <div className={styles.app}>
                 <div className={styles.content}>
                     <Routes>
@@ -16,7 +16,7 @@ function App() {
                 </div>
                 <PlayBar />
             </div>
-        </BrowserRouter>
+        </HashRouter>
     );
 }
 

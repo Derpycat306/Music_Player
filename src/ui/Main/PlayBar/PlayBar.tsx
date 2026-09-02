@@ -40,10 +40,14 @@ function PlayBar() {
         currentTime,
         duration,
         volume,
+        autoplay,
         pause,
         seek,
         setVolume,
         playSong,
+        playNext,
+        playPrevious,
+        toggleAutoplay
     } = usePlayer();
     const [muted, setMuted] = useState<boolean>(false);
     const [resetVol, newResetVol] = useState<number>(0);
@@ -60,7 +64,7 @@ function PlayBar() {
 
             <div className={styles.controls}>
                 <div className={styles.controlButtons}>
-                    <button>◀</button>
+                    <button onClick={() => playPrevious()}>◀</button>
 
                     <button
                         onClick={() =>
@@ -70,7 +74,14 @@ function PlayBar() {
                         {playing ? "⏸" : "▶"}
                     </button>
 
-                    <button>▶</button>
+                    <button 
+                        onClick={() => playNext()}
+                        className={`${autoplay ? styles.auto : ""}`}
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            toggleAutoplay();
+                        }}
+                        >▶</button>
                 </div>
 
                 <div className={styles.timeControl}>

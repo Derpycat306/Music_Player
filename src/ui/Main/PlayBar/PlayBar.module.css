@@ -1,28 +1,41 @@
 .main {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     background-color: var(--surface);
     padding: 10px;
     width: 100%;
+    gap: 12px;
+    min-height: 50px;
 }
 
 .info,
 .volume {
-    flex: 0 0 auto;
-    min-width: 0px;
+    min-width: 0;
 }
 
-.main > * {
-    justify-content: center;
-    align-items: center;
+.info {
+    justify-self: start;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 14px;
 }
 
 .controls {
-    flex: 1;
+    justify-self: center;
     display: flex;
     flex-direction: row;
+    align-items: center;
+    min-width: 0;
+}
+
+.volume {
+    justify-self: end;
+}
+
+.auto {
+    background-color: var(--surface-hover);
+    color: white;
 }
 
 .timeControl {
@@ -32,16 +45,16 @@
 }
 
 .timeSeeker {
-    width: 100px;
-    transition: width 200ms ease;
-}
-
-.timeSeeker:hover {
-    width: 200px;
+    width: 120px;
+    cursor: pointer;
 }
 
 .controlButtons {
     margin-right: 20px;
+}
+
+.controlButtons > button {
+    cursor: pointer;
 }
 
 .mute {
@@ -56,4 +69,5 @@
 
 .volume > input {
     width: 100px;
+    cursor: pointer;
 }

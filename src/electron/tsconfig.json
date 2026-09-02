@@ -5,7 +5,9 @@
         "strict": true,
         "target": "ESNext",
         "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "verbatimModuleSyntax": true,
         "outDir": "../../dist-electron",
-        "skipLibCheck": true
+        "skipLibCheck": true,
     }
 }

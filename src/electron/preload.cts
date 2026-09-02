@@ -1,5 +1,4 @@
-import { ipcRenderer } from "electron";
-
+const ipcRenderer = require("electron").ipcRenderer;
 const electron = require("electron");
 const saveSubscribers = new Set<() => void | Promise<void>>()
 
