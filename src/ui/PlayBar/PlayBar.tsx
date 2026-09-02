@@ -59,7 +59,7 @@ function PlayBar() {
         <div className={styles.main}>
             <div className={styles.info}>
                 <div>{currentSong.title}</div>
-                <div>{currentSong.artist}</div>
+                {currentSong.artist !== "Unknown Artist" && <div>{currentSong.artist}</div>}
             </div>
 
             <div className={styles.controls}>
