@@ -1,7 +1,7 @@
 import AlbumItem from "./AlbumItem";
 import type { ArtistListing } from "../FileExplorer";
 import FolderItem from "./FolderItem";
-import SongItem from "./Songs/SongItem";
+import SongItem from "../Songs/SongItem";
 
 function ArtistItem({ artist }: { artist: ArtistListing }) {
     return (

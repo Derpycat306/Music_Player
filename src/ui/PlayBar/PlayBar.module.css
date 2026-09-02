@@ -1,6 +1,6 @@
 .main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
     background-color: var(--surface);
     padding: 10px;
@@ -22,7 +22,7 @@
 }
 
 .controls {
-    justify-self: center;
+    justify-self: end;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -70,4 +70,53 @@
 .volume > input {
     width: 100px;
     cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .main {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px 10px;
+        justify-items: center;
+    }
+
+    .info,
+    .controls,
+    .volume {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .info {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .info > div {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .controlButtons {
+        margin-right: 20px;
+    }
+
+    .timeControl {
+        width: auto;
+        justify-content: center;
+    }
+
+    .timeSeeker {
+        flex: 0 0 120px;
+    }
+
+    .volume {
+        justify-content: center;
+    }
 }

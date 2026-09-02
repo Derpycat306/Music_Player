@@ -1,9 +1,9 @@
 import styles from "./FileExplorer.module.css";
-import ArtistItem from "./Items/ArtistItem";
-import SongItem from "./Items/Songs/SongItem";
+import ArtistItem from "./Folders/ArtistItem";
+import SongItem from "./Songs/SongItem";
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 import { useMemo, useState } from "react";
-import PlaylistItem from "./Items/PlaylistItem";
+import PlaylistItem from "./Folders/PlaylistItem";
 
 export interface Folder {
     artists: ArtistListing[];
@@ -120,7 +120,7 @@ function FileExplorer() {
 
         favorites: <>{
             ...favoriteSongs.map((song) => (
-                    <SongItem key={song.id} song={song} queue={favoriteSongs} />
+                    <SongItem key={song.id} song={song} queue={favoriteSongs} queueSource="favorites" />
                 ))
             }</>,
 

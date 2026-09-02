@@ -1,6 +1,6 @@
 import FolderItem from "./FolderItem";
 import {usePlayer} from "../../../../AudioPlayer/AudioPlayer";
-import SongItem from "./Songs/SongItem";
+import SongItem from "../Songs/SongItem";
 
 function AlbumItem({ playlist }: { playlist: Playlist }) {
     const { songs } = usePlayer();

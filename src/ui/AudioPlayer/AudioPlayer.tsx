@@ -12,7 +12,7 @@ interface PlayerContextType {
     autoplay: boolean;
     playlists: Set<Playlist>;
 
-    playSong: (song: Song, queue?: Song[]) => Promise<void>;
+    playSong: (song: Song, queue?: Song[], queueSource?: QueueSource) => Promise<void>;
     pause: () => void;
     seek: (time: number) => void;
     setVolume: (volume: number) => void;
@@ -24,6 +24,7 @@ interface PlayerContextType {
     addPlaylist: (name: string, key: string) => void;
 }
 
+type QueueSource = "provided" | "favorites";
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
@@ -48,6 +49,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const currentSongRef = useRef(currentSong);
     const autoplayRef = useRef(autoplay);
     const queueRef = useRef<Song[]>([]);
+    const queueSourceRef = useRef<QueueSource>("provided");
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
         setSongs(data.songs);
@@ -81,10 +83,15 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     }, [autoplay]);
 
     useEffect(() => {
-        if (queueRef.current.length === 0 && songsRef.current.length > 0) {
-            queueRef.current = songsRef.current;
+        if (queueSourceRef.current === "favorites") {
+            queueRef.current = songs.filter((song) => favorites.has(song.id));
+            return;
         }
-    }, [songs]);
+
+        if (queueRef.current.length === 0 && songs.length > 0) {
+            queueRef.current = songs;
+        }
+    }, [songs, favorites]);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -160,11 +167,20 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
     }, []);
 
-    async function playSong(song: Song, queue: Song[] = songsRef.current) {
+    async function playSong(
+        song: Song,
+        queue: Song[] = songsRef.current,
+        queueSource: QueueSource = "provided",
+    ) {
         const audio = audioRef.current;
         if (!audio) return;
 
+        queueSourceRef.current = queueSource;
         queueRef.current = queue.length > 0 ? queue : songsRef.current;
+
+        if (queueSource === "favorites") {
+            queueRef.current = songsRef.current.filter((item) => favoritesRef.current.has(item.id));
+        }
 
         if (!currentSong || currentSong.id !== song.id) {
             audio.src = `music:///song?path=${encodeURIComponent(song.path)}`;

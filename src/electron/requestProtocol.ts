@@ -1,5 +1,6 @@
 import { protocol } from "electron";
 import fs from "fs";
+import path from "path";
 
 export function initProtocol() {
     protocol.handle("music", async (request) => {
@@ -13,6 +14,7 @@ export function initProtocol() {
         try {
             const stats = await fs.promises.stat(filePath);
             const fileSize = stats.size;
+            const contentType = getContentType(filePath);
 
             const range = request.headers.get("range");
 
@@ -22,7 +24,7 @@ export function initProtocol() {
                 return new Response(buffer, {
                     status: 200,
                     headers: {
-                        "Content-Type": "audio/mpeg",
+                        "Content-Type": contentType,
                         "Content-Length": fileSize.toString(),
                         "Accept-Ranges": "bytes",
                     },
@@ -66,7 +68,7 @@ export function initProtocol() {
             return new Response(buffer, {
                 status: 206,
                 headers: {
-                    "Content-Type": "audio/mpeg",
+                    "Content-Type": contentType,
                     "Content-Length": chunkSize.toString(),
                     "Content-Range": `bytes ${start}-${end}/${fileSize}`,
                     "Accept-Ranges": "bytes",
@@ -80,4 +82,17 @@ export function initProtocol() {
             });
         }
     });
+}
+
+function getContentType(filePath: string): string {
+    const extension = path.extname(filePath).toLowerCase();
+    const imageTypes: Record<string, string> = {
+        ".gif": "image/gif",
+        ".jpeg": "image/jpeg",
+        ".jpg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    };
+
+    return imageTypes[extension] ?? "audio/mpeg";
 }

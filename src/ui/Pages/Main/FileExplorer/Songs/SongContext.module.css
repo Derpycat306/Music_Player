@@ -1,0 +1,15 @@
+.contextMenu {
+    z-index: 1000;
+    background-color: var(--surface);
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+}
+
+.contextMenu > * {
+    background-color: var(--surface-hover);
+    color: var(--text-muted);
+    cursor: pointer;
+    min-height: 30px;
+}

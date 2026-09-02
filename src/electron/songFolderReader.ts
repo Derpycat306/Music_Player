@@ -79,30 +79,41 @@ async function scanDirectory(
         if (entry.isDirectory()) {
             switch (depth) {
                 case 0:
-                    songs.push(
-                        ...(await scanDirectory(fullPath, 1, entry.name, album))
-                            .songs,
-                    );
+                    {
+                        const result = await scanDirectory(
+                            fullPath,
+                            1,
+                            entry.name,
+                            album,
+                        );
+                        songs.push(...result.songs);
+                        covers.push(...result.covers);
+                    }
                     break;
                 case 1:
-                    songs.push(
-                        ...(
-                            await scanDirectory(fullPath, 2, artist, entry.name)
-                        ).songs,
-                    );
+                    {
+                        const result = await scanDirectory(
+                            fullPath,
+                            2,
+                            artist,
+                            entry.name,
+                        );
+                        songs.push(...result.songs);
+                        covers.push(...result.covers);
+                    }
                     break;
 
                 default:
-                    songs.push(
-                        ...(
-                            await scanDirectory(
-                                fullPath,
-                                depth + 1,
-                                artist,
-                                album,
-                            )
-                        ).songs,
-                    );
+                    {
+                        const result = await scanDirectory(
+                            fullPath,
+                            depth + 1,
+                            artist,
+                            album,
+                        );
+                        songs.push(...result.songs);
+                        covers.push(...result.covers);
+                    }
             }
         } else if (isAudioFile(entry.name)) {
             songs.push(await parseSong(fullPath, artist, album));
