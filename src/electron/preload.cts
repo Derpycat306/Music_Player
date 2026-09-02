@@ -16,9 +16,7 @@ electron.contextBridge.exposeInMainWorld("electron", {
         ipcRenderer.send("list:set-path", path);
     },
 
-    selectFolder: () => {
-        ipcRenderer.send("list:select-folder");
-    },
+    selectFolder: () => ipcRenderer.invoke("list:select-folder"),
 
     subscribe: (
         callback: (data: { songs: Song[]; albums: AlbumCover[] }) => void,
@@ -61,4 +59,6 @@ electron.contextBridge.exposeInMainWorld("electron", {
             saveSubscribers.delete(callback);
         }
     },
+
+    exportSongs: (songs: Song[]) => ipcRenderer.invoke("export-songs", songs)
 });

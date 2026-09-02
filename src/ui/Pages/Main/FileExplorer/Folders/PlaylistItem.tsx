@@ -15,11 +15,9 @@ function AlbumItem({ playlist }: { playlist: Playlist }) {
         return exactMatches;
     });
 
-    const children = songItems.length > 0
-        ? songItems.map((song) => (
+    const children = songItems.map((song) => (
             <SongItem key={song.id} song={song} queue={songItems} />
         ))
-        : [<div key={`${playlist.name}-empty`}>No songs in this playlist.</div>];
 
     return (
         <FolderItem

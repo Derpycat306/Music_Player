@@ -5,6 +5,7 @@ import { getPreloadPath } from "./pathResolve.js";
 import { initFileReader as initSongFolderReader } from "./songFolderReader.js";
 import { initProtocol } from "./requestProtocol.js";
 import { savedData } from "./saveHandler.js";
+import "./excelSaver.js";
 
 protocol.registerSchemesAsPrivileged([
     {

@@ -18,7 +18,7 @@ type AlbumCover = {
 interface Window {
     electron: {
         setFolder: (string) => void;
-        selectFolder: () => void;
+        selectFolder: () => Promise<string | null>;
         subscribe: (
             callback: (data: { songs: Song[]; covers: AlbumCover[] }) => void,
         ) => void;
@@ -40,6 +40,8 @@ interface Window {
         };
 
         subscribeToSave: (callback: () => Promise<void>) => void;
+
+        exportSongs: (songs: Song[]) => Promise<boolean>;
     };
 };
 

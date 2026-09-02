@@ -32,16 +32,18 @@ ipcMain.on("list:set-path", (_, path) => {
     setFilepath(path);
 });
 
-ipcMain.on("list:select-folder", async () => {
+ipcMain.handle("list:select-folder", async () => {
     const result = await dialog.showOpenDialog({
         properties: ["openDirectory"],
     });
 
     if (result.canceled || result.filePaths.length === 0) {
-        return;
+        return null;
     }
 
-    setFilepath(result.filePaths[0]);
+    const selectedPath = result.filePaths[0];
+    setFilepath(selectedPath);
+    return selectedPath;
 });
 
 async function parseSong(

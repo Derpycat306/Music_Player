@@ -1,10 +1,22 @@
+import { usePlayer } from "../../AudioPlayer/AudioPlayer";
 import { XmarkCircle } from "iconoir-react";
 import styles from "./SettingsMenu.module.css";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const TESTING = import.meta.env.DEV;
 
 function SettingsMenu() {
+    const {songs} = usePlayer();
+    const [folderPath, setFolderPath] = useState<string | null>(null);
+    const [exportStatus, setExportStatus] = useState<string | null>(null);
+
+    useEffect(() => {
+        void window.electron.settings.get().then((settings) => {
+            setFolderPath(settings.baseFolder);
+        });
+    }, []);
+
     return (
         <div className={styles.body}>
             <div className={styles.header}>
@@ -26,10 +38,27 @@ function SettingsMenu() {
                 )}
                 <button
                     onClick={() => {
-                        window.electron.selectFolder();
+                        void window.electron.selectFolder().then((selectedPath) => {
+                            if (selectedPath) {
+                                setFolderPath(selectedPath);
+                            }
+                        });
                     }}
                 >
                     Select Folder
+                    <span className={styles.buttonMessage}>
+                        {folderPath ?? "No folder selected"}
+                    </span>
+                </button>
+                <button onClick={() => {
+                    void window.electron.exportSongs(songs).then((saved) => {
+                        setExportStatus(saved ? "Saved to Downloads" : null);
+                    });
+                }}>
+                    Export songs
+                    {exportStatus && (
+                        <span className={styles.buttonMessage}>{exportStatus}</span>
+                    )}
                 </button>
             </div>
         </div>
