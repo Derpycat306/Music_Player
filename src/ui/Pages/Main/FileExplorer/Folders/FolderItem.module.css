@@ -40,7 +40,7 @@
 
 .arrow {
     display: inline-block;
-    transition: transform 250ms ease;
+    transition: transform 200ms ease;
 }
 
 .arrow.open {
