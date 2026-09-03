@@ -10,7 +10,16 @@ import "./excelSaver.js";
 
 const autoUpdater = electronUpdater.autoUpdater;
 
+autoUpdater.logger = console;
+autoUpdater.on("error", (error) => {
+    console.error("Updater error:", error);
+});
+
 ipcMain.handle("update:check", async () => {
+    if (!app.isPackaged) {
+        return { available: false };
+    }
+
     const result = await autoUpdater.checkForUpdates();
 
     if (!result) {
@@ -24,6 +33,10 @@ ipcMain.handle("update:check", async () => {
 });
 
 ipcMain.handle("update:install", async () => {
+    if (!app.isPackaged) {
+        return;
+    }
+
     await autoUpdater.downloadUpdate();
     autoUpdater.quitAndInstall();
 });
