@@ -29,6 +29,11 @@ interface Window {
             get: () => Promise<Settings>;
         };
 
+        updates: {
+            check: () => Promise<{ available: boolean; version?: string }>;
+            install: () => Promise<void>;
+        };
+
         favorites: {
             set: (save: Partial<string[]>) => void;
             get: () => Promise<string[]>;

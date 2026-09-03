@@ -42,6 +42,11 @@ electron.contextBridge.exposeInMainWorld("electron", {
         get: () => ipcRenderer.invoke("save:settings-get")
     },
 
+    updates: {
+        check: () => ipcRenderer.invoke("update:check"),
+        install: () => ipcRenderer.invoke("update:install"),
+    },
+
     favorites: {
         set: (save: string[]) => ipcRenderer.send("save:favorites-set", save),
         get: () => ipcRenderer.invoke("save:favorites-get")

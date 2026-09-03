@@ -10,6 +10,7 @@ function SettingsMenu() {
     const {songs} = usePlayer();
     const [folderPath, setFolderPath] = useState<string | null>(null);
     const [exportStatus, setExportStatus] = useState<string | null>(null);
+    const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
     useEffect(() => {
         void window.electron.settings.get().then((settings) => {
@@ -58,6 +59,38 @@ function SettingsMenu() {
                     Export songs
                     {exportStatus && (
                         <span className={styles.buttonMessage}>{exportStatus}</span>
+                    )}
+                </button>
+                <button onClick={() => {
+                    setUpdateStatus("Checking for updates...");
+                    void window.electron.updates.check().then((update) => {
+                        if (!update.available) {
+                            setUpdateStatus("You are up to date");
+                            return;
+                        }
+
+                        const shouldInstall = window.confirm(
+                            `Version ${update.version} is available. Download and install it now?`,
+                        );
+
+                        if (!shouldInstall) {
+                            setUpdateStatus("Update postponed");
+                            return;
+                        }
+
+                        setUpdateStatus("Downloading update...");
+                        void window.electron.updates.install().then(() => {
+                            setUpdateStatus("Restarting to install update...");
+                        }).catch(() => {
+                            setUpdateStatus("Update failed");
+                        });
+                    }).catch(() => {
+                        setUpdateStatus("Unable to check for updates");
+                    });
+                }}>
+                    Check for updates
+                    {updateStatus && (
+                        <span className={styles.buttonMessage}>{updateStatus}</span>
                     )}
                 </button>
             </div>

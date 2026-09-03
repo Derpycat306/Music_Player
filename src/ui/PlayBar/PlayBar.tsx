@@ -52,52 +52,61 @@ function PlayBar() {
     const [muted, setMuted] = useState<boolean>(false);
     const [resetVol, newResetVol] = useState<number>(0);
 
-    if (!currentSong)
-        return <div className={styles.main}>Nothing Playing Yet</div>;
-
     return (
         <div className={styles.main}>
             <div className={styles.info}>
-                <div>{currentSong.title}</div>
-                {currentSong.artist !== "Unknown Artist" && <div>{currentSong.artist}</div>}
+                {currentSong ? (
+                    <>
+                        <div>{currentSong.title}</div>
+                        {currentSong.artist !== "Unknown Artist" && <div>{currentSong.artist}</div>}
+                    </>
+                ):
+                (
+                    <>
+                        <div>Nothing Playing Yet</div>
+                    </>
+                )}
             </div>
 
+
             <div className={styles.controls}>
-                <div className={styles.controlButtons}>
-                    <button onClick={() => playPrevious()}>◀</button>
+                {currentSong && ( <>
+                    <div className={styles.controlButtons}>
+                        <button onClick={() => playPrevious()}>◀</button>
 
-                    <button
-                        onClick={() =>
-                            playing ? pause() : playSong(currentSong)
-                        }
-                    >
-                        {playing ? "⏸" : "▶"}
-                    </button>
+                        <button
+                            onClick={() =>
+                                playing ? pause() : playSong(currentSong)
+                            }
+                        >
+                            {playing ? "⏸" : "▶"}
+                        </button>
 
-                    <button 
-                        onClick={() => playNext()}
-                        className={`${autoplay ? styles.auto : ""}`}
-                        onContextMenu={(e) => {
-                            e.preventDefault();
-                            toggleAutoplay();
-                        }}
-                        >▶</button>
-                </div>
+                        <button 
+                            onClick={() => playNext()}
+                            className={`${autoplay ? styles.auto : ""}`}
+                            onContextMenu={(e) => {
+                                e.preventDefault();
+                                toggleAutoplay();
+                            }}
+                            >▶</button>
+                    </div>
 
-                <div className={styles.timeControl}>
-                    <input
-                        className={styles.timeSeeker}
-                        type="range"
-                        min="0"
-                        step="0.05"
-                        max={duration || 0}
-                        value={currentTime}
-                        onChange={(e) => seek(Number(e.target.value))}
-                    />
-                    <span>{formatTime(currentTime)}</span>
-                    <span> / </span>
-                    <span>{formatTime(duration)}</span>
-                </div>
+                    <div className={styles.timeControl}>
+                        <input
+                            className={styles.timeSeeker}
+                            type="range"
+                            min="0"
+                            step="0.05"
+                            max={duration || 0}
+                            value={currentTime}
+                            onChange={(e) => seek(Number(e.target.value))}
+                        />
+                        <span>{formatTime(currentTime)}</span>
+                        <span> / </span>
+                        <span>{formatTime(duration)}</span>
+                    </div>
+                </>)}
             </div>
 
             <div className={styles.volume}>

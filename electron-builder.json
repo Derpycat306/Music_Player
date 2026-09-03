@@ -11,6 +11,13 @@
         "category": "Utility"
     },
     "win": {
-        "target": ["portable", "msi"]
-    }
+        "target": "nsis"
+    },
+    "publish": [
+        {
+            "provider": "github",
+            "owner": "Derpycat306",
+            "repo": "https://github.com/Derpycat306/Music_Player"
+        }
+    ]
 }

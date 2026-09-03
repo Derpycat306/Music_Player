@@ -1,11 +1,32 @@
 import { app, BrowserWindow, ipcMain, protocol } from "electron";
 import path from "path";
 import { isDev } from "./utils.js";
+import electronUpdater from "electron-updater";
 import { getPreloadPath } from "./pathResolve.js";
 import { initFileReader as initSongFolderReader } from "./songFolderReader.js";
 import { initProtocol } from "./requestProtocol.js";
 import { savedData } from "./saveHandler.js";
 import "./excelSaver.js";
+
+const autoUpdater = electronUpdater.autoUpdater;
+
+ipcMain.handle("update:check", async () => {
+    const result = await autoUpdater.checkForUpdates();
+
+    if (!result) {
+        return { available: false };
+    }
+
+    return {
+        available: result.isUpdateAvailable,
+        version: result.updateInfo.version,
+    };
+});
+
+ipcMain.handle("update:install", async () => {
+    await autoUpdater.downloadUpdate();
+    autoUpdater.quitAndInstall();
+});
 
 protocol.registerSchemesAsPrivileged([
     {
