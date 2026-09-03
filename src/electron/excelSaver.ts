@@ -13,13 +13,31 @@ function formatSize(size: number): string {
     }
 }
 
+function formatTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+
+    let timeString = "";
+
+
+    if (hours > 0) {
+        timeString += `${hours}:`;
+    }
+
+    timeString += `${minutes.toString().padStart(2, "0")}:`;
+    timeString += remainingSeconds.toString().padStart(2, "0");
+
+    return timeString;
+}
+
 function exportSongs(songs: Song[]): boolean {
     try {
     const sheet = XLSX.utils.json_to_sheet(songs.map(song => ({
         Artist: song.artist,
         Album: song.album,
         Title: song.title,
-        Length: song.duration,
+        Length: formatTime(song.duration),
         Size: song.path ? formatSize(fs.statSync(song.path).size) : "0 B",
     })));
     const book = XLSX.utils.book_new();

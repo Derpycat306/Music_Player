@@ -12,9 +12,8 @@
         "lint": "oxlint",
         "preview": "vite preview",
         "transpile:electron": "tsc --project src/electron/tsconfig.json",
-        "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
         "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
-        "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --x64"
+        "release": "npm run transpile:electron && npm run build && electron-builder --win --x64 --publish always",
     },
     "dependencies": {
         "electron-updater": "^6.8.9",
