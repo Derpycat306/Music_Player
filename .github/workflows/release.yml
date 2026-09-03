@@ -25,19 +25,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Windows artifacts
-        run: npm run dist:win
-
-      - name: Create one GitHub release with all artifacts
-        shell: pwsh
-        run: |
-          $assets = Get-ChildItem -Path dist -File | Where-Object {
-            $_.Name -match '\.(exe|blockmap|yml)$'
-          }
-          gh release create "$env:GITHUB_REF_NAME" `
-            --repo "$env:GITHUB_REPOSITORY" `
-            --title "Music Player $env:GITHUB_REF_NAME" `
-            --generate-notes `
-            $assets.FullName
+      - name: Build and publish
+        run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
