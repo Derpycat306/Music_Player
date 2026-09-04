@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 
 interface PlayerContextType {
@@ -14,6 +14,7 @@ interface PlayerContextType {
 
     playSong: (song: Song, queue?: Song[], queueSource?: QueueSource) => Promise<void>;
     pause: () => void;
+    play: () => void;
     seek: (time: number) => void;
     setVolume: (volume: number) => void;
     isFavorite: (key: string) => boolean;
@@ -25,6 +26,8 @@ interface PlayerContextType {
 }
 
 type QueueSource = "provided" | "favorites";
+
+const FAVORITES_PLAYLIST_NAME = "Favorites";
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
@@ -41,6 +44,14 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [autoplay, setAutoplay] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [playlists, setPlaylists] = useState<Set<Playlist>>(new Set());
+    const playlistsWithFavorites = useMemo(() => {
+        const favoritePlaylist: Playlist = {
+            name: FAVORITES_PLAYLIST_NAME,
+            songs: [...favorites],
+        };
+
+        return new Set([favoritePlaylist, ...playlists]);
+    }, [favorites, playlists]);
 
     const volumeRef = useRef(volume);
     const playlistsRef = useRef(playlists);
@@ -49,7 +60,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const currentSongRef = useRef(currentSong);
     const autoplayRef = useRef(autoplay);
     const queueRef = useRef<Song[]>([]);
-    const queueSourceRef = useRef<QueueSource>("provided");
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
         setSongs(data.songs);
@@ -83,17 +93,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     }, [autoplay]);
 
     useEffect(() => {
-        if (queueSourceRef.current === "favorites") {
-            queueRef.current = songs.filter((song) => favorites.has(song.id));
-            return;
-        }
-
-        if (queueRef.current.length === 0 && songs.length > 0) {
-            queueRef.current = songs;
-        }
-    }, [songs, favorites]);
-
-    useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
@@ -104,7 +103,9 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             const settings: Settings | null = await window.electron.settings.get();
 
             setFavorites(new Set(fav));
-            setPlaylists(new Set(pls));
+            setPlaylists(new Set(pls.filter(
+                (playlist) => playlist.name.toLowerCase() !== FAVORITES_PLAYLIST_NAME.toLowerCase(),
+            )));
             setVolume(settings.volume)
         }
         init();
@@ -170,17 +171,11 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     async function playSong(
         song: Song,
         queue: Song[] = songsRef.current,
-        queueSource: QueueSource = "provided",
     ) {
         const audio = audioRef.current;
         if (!audio) return;
 
-        queueSourceRef.current = queueSource;
         queueRef.current = queue.length > 0 ? queue : songsRef.current;
-
-        if (queueSource === "favorites") {
-            queueRef.current = songsRef.current.filter((item) => favoritesRef.current.has(item.id));
-        }
 
         if (!currentSong || currentSong.id !== song.id) {
             audio.src = `music:///song?path=${encodeURIComponent(song.path)}`;
@@ -198,12 +193,21 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         setPlaying(false);
     }
 
+    function play() {
+        audioRef.current?.play();
+        setPlaying(true);
+    }
+
     function seek(time: number) {
         const audio = audioRef.current;
 
         if (!audio) return;
 
         audio.currentTime = time;
+
+        if(!playing){
+            play()
+        }
     }
 
     function setVolume(volume: number) {
@@ -258,9 +262,17 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         void playSong(queue[previousIndex], queue);
     }
 
+    function toggleAutoplay() {
+        setAutoplay(!autoplay)
+        if(!playing){
+            playNext()
+        }
+    }
+
     function addPlaylist(name: string, key: string) {
         const cleanedName = name.trim();
         if (!cleanedName || !key) return;
+        if (cleanedName.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) return;
 
         const normalizedKey = key.replace(/\\/g, "/").toLowerCase();
 
@@ -306,16 +318,17 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 duration,
                 volume,
                 autoplay,
-                playlists,
+                playlists: playlistsWithFavorites,
                 playSong,
                 pause,
+                play,
                 seek,
                 setVolume,
                 isFavorite,
                 toggleFavorite,
                 playNext,
                 playPrevious,
-                toggleAutoplay: () => setAutoplay(!autoplay),
+                toggleAutoplay,
                 addPlaylist,
             }}
         >

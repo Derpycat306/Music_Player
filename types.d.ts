@@ -9,6 +9,12 @@ type Song = {
     coverPath?: string;
 };
 
+type SongListing = {
+    song: Song;
+    queue: Song[];
+    art: string | null;
+}
+
 type AlbumCover = {
     id: string;
     title: string;

@@ -1,0 +1,26 @@
+import styles from "./ListItem.module.css";
+import { useExplorer } from "../ExplorerContext";
+
+interface ListItemProps {
+    id: string;
+    name: string;
+    icon?: React.ReactNode | null;
+}
+
+function ListItem({ id, name, icon }: ListItemProps) {
+    const {traverse, currentSelectedId} = useExplorer();
+
+    return (
+        <div>
+            <div
+                className={`${styles.item} ${id === currentSelectedId ? styles.selected : ""}`}
+                onClick={() => traverse(id)}
+            >
+                {icon && <div className={styles.icon}>{icon}</div>}
+                <span className={styles.name}>{name}</span>
+            </div>
+        </div>
+    );
+}
+
+export default ListItem;

@@ -42,9 +42,9 @@ function PlayBar() {
         volume,
         autoplay,
         pause,
+        play,
         seek,
         setVolume,
-        playSong,
         playNext,
         playPrevious,
         toggleAutoplay
@@ -76,7 +76,7 @@ function PlayBar() {
 
                         <button
                             onClick={() =>
-                                playing ? pause() : playSong(currentSong)
+                                playing ? pause() : play()
                             }
                         >
                             {playing ? "⏸" : "▶"}

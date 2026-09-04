@@ -15,17 +15,35 @@ text,
 }
 
 :root {
-    --background: #1a1a1e;
-    --sidebar: #121214;
-    --surface: #202225;
-    --surface-hover: #2a2d31;
+    --dark: #0c0c0c; 
+    --background: #18181b;
+    --sidebar: #111113;
+    --scrollbar: #1f136c;
+    --scrollbar-hover: #cccccc;
+    --header: #070708;
+    --surface: #1a1920;
+    --surface-selected: rgb(15, 14, 18);
+    --surface-hover: #272331;
 
-    --text: #f2f3f5;
-    --text-muted: #a5a7ab;
+    --text: #d1d3d3;
+    --text-muted: #8e8f90;
 
-    --accent: #1db954;
+    --accent: #311e5b;
 
     interpolate-size: allow-keywords;
 
     color: var(--text);
+}
+
+::-webkit-scrollbar {
+    background-color: var(--sidebar);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-hover);
 }

@@ -1,0 +1,46 @@
+.item {
+    position: relative;
+    display: flex;
+    background-color: var(--surface);
+    align-items: center;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: row;
+    box-shadow: 4px 8px 8px #0a0a0a;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.item:hover {
+    background-color: var(--surface-hover);
+}
+
+.selected {
+    color: var(--text);
+    font-weight: bold;
+}
+
+.icon {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    overflow: hidden;
+    border-radius: 3px;
+    margin-right: 5px;
+}
+
+.icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.name {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+    font-size: 12px;
+    margin: 0px;
+}

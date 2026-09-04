@@ -1,5 +1,5 @@
 .module {
-    width: 40%;
+    width: 300px;
     height: 100%;
     min-height: 0;
     background-color: var(--sidebar);
@@ -19,8 +19,7 @@
     display: flex;
 }
 
-.control > button{
-    flex: 1;
+.module button{
     background-color: var(--surface);
     min-height: 30px;
     display: flex;
@@ -33,30 +32,33 @@
     padding: 0px;
 }
 
+.control > button{
+    flex: 1;
+}
+
 .control > button[aria-pressed="true"]{
-    background-color: var(--sidebar)
+    background-color: var(--surface-selected);
+}
+
+.name {
+    text-align: center;
+    padding: 10px;
+    background-color: var(--surface);
+    border-right: 3px solid #000000;
+    border-bottom: 3px solid #000000;
+    border-top: 3px solid #3d3d3d;
+    margin: 0px;
 }
 
 .children {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 20px;
+    padding: 10px;
     display: flex;
+    gap: 5px;
     flex-direction: column;
     color: var(--text-muted);
     font-family: Inter, system-ui, sans-serif;
     user-select: none;
     overflow-y: scroll;
-}
-
-::-webkit-scrollbar {
-    background-color: var(--sidebar);
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: var(--surface);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: var(--surface-hover);
 }

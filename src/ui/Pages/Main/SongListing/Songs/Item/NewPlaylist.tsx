@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {usePlayer} from "../../../../AudioPlayer/AudioPlayer";
+import {usePlayer} from "../../../../../AudioPlayer/AudioPlayer";
 
 type Props = {
     song: string;

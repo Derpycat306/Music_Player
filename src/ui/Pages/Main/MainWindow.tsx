@@ -1,17 +1,23 @@
 import FileExplorer from "./FileExplorer/FileExplorer";
 import styles from "./MainWindow.module.css";
-import MainPanel from "./MainPanel/MainPanel";
 import MainHeader from "./Header/MainHeader";
+import { ExplorerProvider } from "./ExplorerContext";
+import MainPanel from "./MainPanel/MainPanel";
+import SongList from "./SongListing/Songs/SongList";
 
 function MainWindow() {
+
     return (
-        <div className={styles.body}>
-            <MainHeader />
-            <div className={styles.main}>
-                <FileExplorer />
-                <MainPanel />
+        <ExplorerProvider>
+            <div className={styles.body}>
+                <MainHeader />
+                <div className={styles.main}>
+                    <FileExplorer />
+                    <MainPanel />
+                    <SongList />
+                </div>
             </div>
-        </div>
+        </ExplorerProvider>
     );
 }
 

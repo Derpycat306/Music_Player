@@ -1,8 +1,8 @@
 .main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    display: flex;
+    flex-direction: row;
     align-items: center;
-    background-color: var(--surface);
+    background-color: var(--header);
     padding: 10px;
     width: 100%;
     gap: 12px;
@@ -12,6 +12,7 @@
 .info,
 .volume {
     min-width: 0;
+    flex: 0 0 auto
 }
 
 .info {
@@ -22,6 +23,8 @@
 }
 
 .controls {
+    flex: 1;
+    justify-content: center;
     justify-self: end;
     display: flex;
     flex-direction: row;
