@@ -7,9 +7,29 @@
     width: 200px;
 }
 
-.contextMenu > * {
+.contextMenu * {
     background-color: var(--surface-hover);
     color: var(--text-muted);
     cursor: pointer;
     min-height: 30px;
+}
+
+.playlistList {
+    padding: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 100px;
+    overflow-y: auto;
+    background-color: var(--sidebar);
+}
+
+.playlistList button {
+    flex: 0 0 auto;
+    text-align: left;
+}
+
+.emptyMessage {
+    color: var(--text-muted);
+    padding: 8px;
 }

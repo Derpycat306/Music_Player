@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useState, type PropsWithChildren } 
 import { usePlayer } from "../../AudioPlayer/AudioPlayer";
 
 export type ExplorerView = "artists" | "playlists"
-type ExplorerDepth = "top" | "artist" | "album" | "playlist"
+export type ExplorerLeafType = "none" | "album" | "playlist" | "other"
 
 export interface ExplorerNode {
     id: string;
@@ -40,6 +40,17 @@ function songMatchesFilter(song: Song, filter: string) {
         song.album?.toLowerCase().includes(filter);
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+    const result = [...array]; // don't modify the original
+
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+
+    return result;
+}
 function filterDirectory(directory: ExplorerDirectory, filter: string): ExplorerDirectory {
     return {
         ...directory,
@@ -56,8 +67,8 @@ function filterDirectory(directory: ExplorerDirectory, filter: string): Explorer
 
 interface ExplorerContextType {
     currentViewType: ExplorerView
-    currentDepth: ExplorerDepth
     currentSelectedId: string | null
+    currentSelectedType: ExplorerLeafType
     currentParent: ExplorerDirectory
     currentChildren: ExplorerChild[]
     currentSelected: ExplorerLeaf | null
@@ -67,10 +78,9 @@ interface ExplorerContextType {
     filter: string
 
     setViewType: (type: ExplorerView) => void
-    setDepth: (depth: ExplorerDepth) => void
     setSelected: (id: string | null) => void
     setFilter: (filter: string) => void
-    traverse: (id: string) => void
+    traverse: (id: string, shuffle?: boolean) => SongListing[]
     returnToParent: () => void
 }
 
@@ -113,7 +123,7 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
                 name: albumName,
                 kind: "leaf",
                 art,
-                songs: albumSongs.map((song) => ({ song, queue: albumSongs, art })),
+                songs: albumSongs.map((song) => ({ song, art })),
             });
         }
 
@@ -124,7 +134,7 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
                 name: "Singles",
                 kind: "leaf",
                 art: null,
-                songs: singles.map((song) => ({ song, queue: singles, art: getAlbumArt(song) })),
+                songs: singles.map((song) => ({ song, art: getAlbumArt(song) })),
             });
         }
 
@@ -147,7 +157,7 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
                 name: "Singles",
                 kind: "leaf",
                 art: null,
-                songs: rootSongs.map((song) => ({ song, queue: rootSongs, art: getAlbumArt(song) })),
+                songs: rootSongs.map((song) => ({ song, art: getAlbumArt(song) })),
             }],
         });
     }
@@ -168,7 +178,7 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
         return {
             id: `playlist:${playlist.name}`,
             name: playlist.name,
-            songs: playlistSongs.map((song) => ({ song, queue: playlistSongs, art: getAlbumArt(song) })),
+            songs: playlistSongs.map((song) => ({ song, art: getAlbumArt(song) })),
             kind: "leaf",
         };
     });
@@ -198,11 +208,11 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
 const ExplorerContext = createContext<ExplorerContextType | null>(null)
 
 export function ExplorerProvider({ children }: PropsWithChildren) {
-    const { songs, covers, playlists } = usePlayer();
+    const { songs, covers, playlists, setQueue } = usePlayer();
     const [currentViewType, setCurrentViewType] = useState<ExplorerView>("artists")
-    const [currentDepth, setDepth] = useState<ExplorerDepth>("top")
     const [parentIds, setParentIds] = useState<string[]>([])
     const [currentSelectedId, setSelected] = useState<string | null>(null)
+    const [currentSongs, setCurrentSongs] = useState<SongListing[]>([])
     const [filter, setFilter] = useState("");
 
     const folder = useMemo(() => {
@@ -249,28 +259,37 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         return findLeaf(folder.artistsRoot) ?? findLeaf(folder.playlistsRoot);
     }, [currentSelectedId, folder.artistsRoot, folder.playlistsRoot]);
 
-    function traverse(id: string) {
+    const currentSelectedType = useMemo<ExplorerLeafType | null>(() => {
+        if (!currentSelected) return null;
+        if (currentSelected.id.startsWith("album:")) return "album";
+        if (currentSelected.id.startsWith("playlist:")) return "playlist";
+        return "other";
+    }, [currentSelected]);
+
+    function traverse(id: string, shuffle = false): SongListing[] {
         const target = currentChildren.find((child) => child.id === id);
-        if (!target) return;
+        if (!target) return [];
 
         if (target.kind === "directory") {
             setParentIds((ids) => [...ids, target.id]);
-            setDepth("artist");
-        } else {
-            setSelected(target.id);
-            setDepth(target.id.startsWith("playlist:") ? "playlist" : "album");
+            return [];
         }
+
+        setSelected(target.id);
+        const queue = [...target.songs];
+        const orderedSongs = shuffle ? shuffleArray(queue) : queue;
+        setQueue(orderedSongs);
+        setCurrentSongs(orderedSongs);
+        return orderedSongs;
     }
 
     function returnToParent() {
         setParentIds((ids) => ids.slice(0, -1));
-        setDepth(parentIds.length <= 1 ? "top" : "artist");
     }
 
     function setViewType(view: ExplorerView) {
         setCurrentViewType(view);
         setParentIds([]);
-        setDepth("top");
     }
 
     return (
@@ -278,17 +297,16 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             value={
                 {
                     currentViewType,
-                    currentDepth,
                     currentSelectedId,
+                    currentSelectedType,
                     currentParent,
                     currentChildren,
                     currentSelected,
-                    currentSongs: currentSelected ? currentSelected.songs : [],
+                    currentSongs,
                     canReturn: parentIds.length > 0,
                     folder,
                     filter,
                     setViewType,
-                    setDepth,
                     setSelected,
                     setFilter,
                     traverse,

@@ -1,9 +1,279 @@
 .main {
     height: 100%;
     width: 100%;
+    min-height: 0;
+    background: linear-gradient(180deg, #30203f 0, var(--background) 250px);
+    overflow: hidden;
+}
+
+.content {
+    height: 100%;
+    overflow-y: auto;
+    padding: 34px clamp(20px, 4vw, 56px) 48px;
+}
+
+.welcome {
+    margin-bottom: 34px;
+}
+
+.welcome h1,
+.hero h1 {
+    margin: 4px 0 8px;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.8rem);
+    line-height: 1;
+    letter-spacing: 0;
+}
+
+.welcome p,
+.heroCopy p,
+.sectionHeading span {
+    color: var(--text-muted);
+}
+
+.welcome p,
+.heroCopy p {
+    margin: 0;
+}
+
+.eyebrow,
+.heroCopy > span {
+    margin: 0;
+    color: #c9a8f1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.section {
+    margin-bottom: 34px;
+}
+
+.sectionHeading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.sectionHeading h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.35rem;
+}
+
+.sectionHeading span {
+    font-size: 0.8rem;
+}
+
+.cardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 16px;
+}
+
+.card {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: rgba(17, 17, 19, 0.62);
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.card:hover,
+.card:focus-visible {
+    background: var(--surface-hover);
+    transform: translateY(-3px);
+}
+
+.cardArt,
+.heroArt {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, #5b3b79, #1c253e);
+}
+
+.cardArt {
+    aspect-ratio: 1;
+    margin-bottom: 12px;
+}
+
+.cardArt img,
+.heroArt img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cardArt span,
+.heroArt span {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 3rem;
+}
+
+.card strong,
+.card span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card strong {
+    color: #fff;
+}
+
+.card span {
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.hero {
+    display: flex;
+    align-items: end;
+    gap: 24px;
+    max-width: 900px;
+    min-height: 245px;
+}
+
+.heroArt {
+    flex: 0 0 210px;
+    width: 210px;
+    height: 210px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.heroCopy {
+    min-width: 0;
+    padding-bottom: 6px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    padding: 24px 0 18px;
+}
+
+.primaryAction,
+.secondaryAction {
+    min-height: 36px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 18px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.primaryAction {
+    background: #d6b7ff;
+    color: #1a1025;
+}
+
+.secondaryAction {
+    border: 1px solid #71617d;
+    background: transparent;
+    color: #fff;
+}
+
+.primaryAction:hover,
+.secondaryAction:hover {
+    filter: brightness(1.12);
+}
+
+.trackTable {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    gap: 2px;
+    max-width: 1000px;
+}
+
+.track {
+    display: grid;
+    grid-template-columns: 32px minmax(150px, 1fr) minmax(120px, 0.7fr) 52px;
     align-items: center;
-    z-index: -1;
+    gap: 12px;
+    min-height: 52px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+}
+
+.track:hover,
+.track:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.trackCurrent .trackNumber,
+.trackCurrent .trackTitle strong {
+    color: #d6b7ff;
+}
+
+.trackTitle {
+    min-width: 0;
+}
+
+.trackTitle strong,
+.trackTitle small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.trackTitle strong {
+    color: #fff;
+}
+
+.trackTitle small {
+    margin-top: 3px;
+    color: var(--text-muted);
+}
+
+.trackAlbum,
+.trackDuration {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+    .content {
+        padding: 24px 18px 32px;
+    }
+
+    .hero {
+        align-items: center;
+        min-height: 0;
+    }
+
+    .heroArt {
+        flex-basis: 130px;
+        width: 130px;
+        height: 130px;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .track {
+        grid-template-columns: 28px minmax(0, 1fr) 48px;
+    }
+
+    .trackAlbum {
+        display: none;
+    }
 }

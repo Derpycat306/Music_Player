@@ -1,4 +1,5 @@
 .main {
+    position: relative;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -16,6 +17,16 @@
 }
 
 .info {
+    display: flex;
+    flex-direction: row;
+}
+
+.info img {
+    width: 30px;
+    margin-right: 10px;
+}
+
+.text {
     justify-self: start;
     max-width: 100%;
     overflow: hidden;
@@ -23,9 +34,10 @@
 }
 
 .controls {
-    flex: 1;
+    position: absolute;
+    left: 55%;
+    transform: translateX(-50%);
     justify-content: center;
-    justify-self: end;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -33,12 +45,7 @@
 }
 
 .volume {
-    justify-self: end;
-}
-
-.auto {
-    background-color: var(--surface-hover);
-    color: white;
+    margin-left: auto;
 }
 
 .timeControl {
@@ -53,11 +60,30 @@
 }
 
 .controlButtons {
-    margin-right: 20px;
+    margin-right: 10px;
 }
 
 .controlButtons > button {
+    background-color: var(--surface-hover);
+    height: 25px;
+    width: 25px;
+    color: var(--text-muted);
+    font-family: Inter, system-ui, sans-serif;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
     cursor: pointer;
+}
+
+.controlButtons > .auto {
+    background-color: var(--surface-selected);
+    color: white;
+    font-weight: bold;
+    border-right: 2px solid #656565;
+    border-bottom: 2px solid #656565;
+    border-left: 2px solid #c1c1c1;
+    border-top: 2px solid #c1c1c1;
 }
 
 .mute {
@@ -75,7 +101,7 @@
     cursor: pointer;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
     .main {
         display: flex;
         flex-direction: column;
@@ -91,7 +117,12 @@
         justify-content: center;
     }
 
-    .info {
+    .controls {
+        position: static;
+        transform: none;
+    }
+
+    .text {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -104,10 +135,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    .controlButtons {
-        margin-right: 20px;
     }
 
     .timeControl {

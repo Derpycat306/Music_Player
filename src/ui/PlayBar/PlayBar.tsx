@@ -57,8 +57,16 @@ function PlayBar() {
             <div className={styles.info}>
                 {currentSong ? (
                     <>
-                        <div>{currentSong.title}</div>
-                        {currentSong.artist !== "Unknown Artist" && <div>{currentSong.artist}</div>}
+                        {currentSong.art && (
+                            <img
+                                src={`music:///song?path=${encodeURIComponent(currentSong.art)}`}
+                                alt=""
+                            />
+                        )}
+                        <div className={styles.text}>
+                            <div>{currentSong.song.title}</div>
+                            {currentSong.song.artist !== "Unknown Artist" && <div>{currentSong.song.artist}</div>}
+                        </div>
                     </>
                 ):
                 (

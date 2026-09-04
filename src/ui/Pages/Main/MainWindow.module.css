@@ -16,3 +16,31 @@
     flex-direction: row;
     overflow: hidden;
 }
+
+.main > :first-child {
+    flex: 0 0 200px;
+    width: 200px;
+}
+
+.main > :nth-child(2) {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.main > :nth-child(3) {
+    flex: 0 0 200px;
+    width: 200px;
+}
+
+@media (max-width: 700px) {
+    .main > :nth-child(2) {
+        display: none;
+    }
+
+    .main > :first-child,
+    .main > :nth-child(3) {
+        flex: 1 1 50%;
+        width: 50%;
+        min-width: 0;
+    }
+}

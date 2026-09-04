@@ -7,7 +7,6 @@ function SongItem(prop: {songListing: SongListing}) {
     const { playSong, currentSong, isFavorite } = usePlayer();
     const [contextMenu, setContextMenu] = useState<{X: number, Y: number, song: Song} | null>(null);
     const song = prop.songListing.song
-    const queue = prop.songListing.queue
     const art = prop.songListing.art
 
     useEffect(() => {
@@ -23,8 +22,8 @@ function SongItem(prop: {songListing: SongListing}) {
     return (
         <div>
             <div
-                className={`${styles.item} ${song.id === currentSong?.id ? styles.current : ""} ${isFavorite(song.id) ? styles.favorite : ""}`}
-                onClick={() => {playSong(song, queue ?? [])}}
+                className={`${styles.item} ${song.id === currentSong?.song.id ? styles.current : ""} ${isFavorite(song.id) ? styles.favorite : ""}`}
+                onClick={() => {playSong(prop.songListing)}}
                 onMouseDown={(e) => {
                     if(e.button === 2){
                         e.preventDefault;

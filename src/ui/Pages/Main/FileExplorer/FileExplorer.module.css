@@ -1,5 +1,4 @@
 .module {
-    width: 300px;
     height: 100%;
     min-height: 0;
     background-color: var(--sidebar);
@@ -30,6 +29,7 @@
     justify-content: center;
     align-items: center;
     padding: 0px;
+    cursor: pointer;
 }
 
 .control > button{
@@ -38,6 +38,8 @@
 
 .control > button[aria-pressed="true"]{
     background-color: var(--surface-selected);
+    color: var(--text);
+    font-weight: bold;
 }
 
 .name {
@@ -46,6 +48,7 @@
     background-color: var(--surface);
     border-right: 3px solid #000000;
     border-bottom: 3px solid #000000;
+    border-left: 3px solid #3d3d3d;
     border-top: 3px solid #3d3d3d;
     margin: 0px;
 }
@@ -55,10 +58,31 @@
     min-height: 0;
     padding: 10px;
     display: flex;
-    gap: 5px;
+    gap: 3px;
     flex-direction: column;
     color: var(--text-muted);
     font-family: Inter, system-ui, sans-serif;
     user-select: none;
-    overflow-y: scroll;
+    overflow-y: auto;
+}
+
+.playlistActions {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    border-top: 1px solid var(--surface-hover);
+}
+
+.playlistActions input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 30px;
+    background-color: var(--sidebar);
+    color: var(--text-muted);
+    padding: 5px;
+    cursor: text;
 }

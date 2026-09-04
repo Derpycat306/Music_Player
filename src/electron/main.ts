@@ -58,6 +58,7 @@ app.on("ready", () => {
 
     const mainWindow = new BrowserWindow({
         icon: path.join(app.getAppPath(), "assets", "icon.png"),
+        minWidth: 400,
         webPreferences: {
             preload: getPreloadPath(),
         },

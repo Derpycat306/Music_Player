@@ -9,9 +9,11 @@ type Props = {
 };
 
 function SongContext({song, X, Y, }: Props) {
-    const { isFavorite, toggleFavorite, addPlaylist } = usePlayer();
+    const { isFavorite, toggleFavorite, addPlaylist, playlists } = usePlayer();
     const [context, setContext] = useState<"default" | "playlist">("default");
-    const [playlistName, setPlaylistName] = useState("");
+    const availablePlaylists = [...playlists].filter(
+        (playlist) => playlist.name.toLowerCase() !== "favorites",
+    );
 
     const views = {
         default: (
@@ -30,15 +32,21 @@ function SongContext({song, X, Y, }: Props) {
                 <button onClick={() => setContext("default")}>
                     Back to Context Menu
                 </button>
-                <input 
-                    type="text" 
-                    placeholder="Enter playlist name" 
-                    value={playlistName}
-                    onChange={(e) => setPlaylistName(e.target.value)}
-                />
-                <button onClick={() => {addPlaylist(playlistName, song.id); setContext("default")}}>
-                    Add to Playlist
-                </button>
+                <div className={styles.playlistList}>
+                    {availablePlaylists.length > 0 ? availablePlaylists.map((playlist) => (
+                        <button
+                            key={playlist.name}
+                            onClick={() => {
+                                addPlaylist(playlist.name, song.id);
+                                setContext("default");
+                            }}
+                        >
+                            {playlist.name}
+                        </button>
+                    )) : (
+                        <span className={styles.emptyMessage}>No playlists yet</span>
+                    )}
+                </div>
             </div>
         ),
     };

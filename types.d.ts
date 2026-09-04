@@ -11,7 +11,6 @@ type Song = {
 
 type SongListing = {
     song: Song;
-    queue: Song[];
     art: string | null;
 }
 

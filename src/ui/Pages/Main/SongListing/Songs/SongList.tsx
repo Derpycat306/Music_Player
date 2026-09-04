@@ -3,15 +3,26 @@ import SongItem from './Item/SongItem';
 import styles from './SongList.module.css'
 
 function SongList () {
-    const {currentSongs, currentSelected} = useExplorer();
+    const {currentSongs, currentSelected, setSelected} = useExplorer();
 
     return (
-        <div className={styles.module}>
-            <div className={styles.name}>{currentSelected ? currentSelected.name : "Nothing selected yet"}</div>
+        currentSelected && <div className={styles.module}>
+            <div className={styles.name}>
+                <span>{currentSelected.name}</span>
+                <button
+                    type="button"
+                    className={styles.close}
+                    aria-label="Close song list"
+                    title="Close song list"
+                    onClick={() => setSelected(null)}
+                >
+                    X
+                </button>
+            </div>
             <div className={styles.songs}>
                 {
-                    currentSongs.map(song => (
-                        <SongItem songListing={song} />
+                    currentSongs.map(songListing => (
+                        <SongItem key={songListing.song.id} songListing={songListing} />
                     ))
                 }
             </div>

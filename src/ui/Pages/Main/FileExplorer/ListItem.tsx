@@ -5,9 +5,10 @@ interface ListItemProps {
     id: string;
     name: string;
     icon?: React.ReactNode | null;
+    onContextMenu?: (event: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-function ListItem({ id, name, icon }: ListItemProps) {
+function ListItem({ id, name, icon, onContextMenu }: ListItemProps) {
     const {traverse, currentSelectedId} = useExplorer();
 
     return (
@@ -15,6 +16,7 @@ function ListItem({ id, name, icon }: ListItemProps) {
             <div
                 className={`${styles.item} ${id === currentSelectedId ? styles.selected : ""}`}
                 onClick={() => traverse(id)}
+                onContextMenu={onContextMenu}
             >
                 {icon && <div className={styles.icon}>{icon}</div>}
                 <span className={styles.name}>{name}</span>

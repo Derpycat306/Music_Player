@@ -4,7 +4,7 @@ import type { PropsWithChildren } from "react";
 interface PlayerContextType {
     songs: Song[];
     covers: AlbumCover[];
-    currentSong: Song | null;
+    currentSong: SongListing | null;
     playing: boolean;
     currentTime: number;
     duration: number;
@@ -12,7 +12,8 @@ interface PlayerContextType {
     autoplay: boolean;
     playlists: Set<Playlist>;
 
-    playSong: (song: Song, queue?: Song[], queueSource?: QueueSource) => Promise<void>;
+    setQueue: (queue: SongListing[]) => void;
+    playSong: (song: SongListing) => Promise<void>;
     pause: () => void;
     play: () => void;
     seek: (time: number) => void;
@@ -22,10 +23,9 @@ interface PlayerContextType {
     playNext: () => void;
     playPrevious: () => void;
     toggleAutoplay: () => void;
-    addPlaylist: (name: string, key: string) => void;
+    addPlaylist: (name: string, key?: string) => void;
+    deletePlaylist: (name: string) => void;
 }
-
-type QueueSource = "provided" | "favorites";
 
 const FAVORITES_PLAYLIST_NAME = "Favorites";
 
@@ -36,7 +36,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
     const [songs, setSongs] = useState<Song[]>([]);
     const [covers, setCovers] = useState<AlbumCover[]>([]);
-    const [currentSong, setCurrentSong] = useState<Song | null>(null);
+    const [currentSong, setCurrentSong] = useState<SongListing | null>(null);
     const [playing, setPlaying] = useState<boolean>(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -59,7 +59,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const songsRef = useRef(songs);
     const currentSongRef = useRef(currentSong);
     const autoplayRef = useRef(autoplay);
-    const queueRef = useRef<Song[]>([]);
+    const queueRef = useRef<SongListing[]>([]);
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
         setSongs(data.songs);
@@ -130,8 +130,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 return;
             }
 
-            const queue = queueRef.current.length > 0 ? queueRef.current : songsRef.current;
-            const currentIndex = queue.findIndex((item) => item.id === song.id);
+            const queue = queueRef.current;
+            const currentIndex = queue.findIndex((item) => item.song.id === song.song.id);
 
             if (currentIndex === -1 || queue.length === 0) {
                 return;
@@ -144,7 +144,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 return;
             }
 
-            void playSong(nextSong, queue);
+            void playSong(nextSong);
         };
 
         audio.addEventListener("timeupdate", updateTime);
@@ -168,17 +168,16 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
     }, []);
 
-    async function playSong(
-        song: Song,
-        queue: Song[] = songsRef.current,
-    ) {
+    function setQueue(queue: SongListing[]) {
+        queueRef.current = [...queue];
+    }
+
+    async function playSong(song: SongListing) {
         const audio = audioRef.current;
         if (!audio) return;
 
-        queueRef.current = queue.length > 0 ? queue : songsRef.current;
-
-        if (!currentSong || currentSong.id !== song.id) {
-            audio.src = `music:///song?path=${encodeURIComponent(song.path)}`;
+        if (!currentSong || currentSong.song.id !== song.song.id) {
+            audio.src = `music:///song?path=${encodeURIComponent(song.song.path)}`;
 
             setCurrentSong(song);
             setCurrentTime(0);
@@ -242,24 +241,24 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
     function playNext() {
         const song = currentSongRef.current ?? currentSong;
-        const queue = queueRef.current.length > 0 ? queueRef.current : songsRef.current;
+        const queue = queueRef.current;
 
         if (!song || queue.length === 0) return;
 
-        const currentIndex = queue.findIndex((item) => item.id === song.id);
+        const currentIndex = queue.findIndex((item) => item.song.id === song.song.id);
         const nextIndex = (currentIndex + 1) % queue.length;
-        void playSong(queue[nextIndex], queue);
+        void playSong(queue[nextIndex]);
     }
 
     function playPrevious() {
         const song = currentSongRef.current ?? currentSong;
-        const queue = queueRef.current.length > 0 ? queueRef.current : songsRef.current;
+        const queue = queueRef.current;
 
         if (!song || queue.length === 0) return;
 
-        const currentIndex = queue.findIndex((item) => item.id === song.id);
+        const currentIndex = queue.findIndex((item) => item.song.id === song.song.id);
         const previousIndex = (currentIndex - 1 + queue.length) % queue.length;
-        void playSong(queue[previousIndex], queue);
+        void playSong(queue[previousIndex]);
     }
 
     function toggleAutoplay() {
@@ -269,12 +268,12 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         }
     }
 
-    function addPlaylist(name: string, key: string) {
+    function addPlaylist(name: string, key?: string) {
         const cleanedName = name.trim();
-        if (!cleanedName || !key) return;
+        if (!cleanedName) return;
         if (cleanedName.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) return;
 
-        const normalizedKey = key.replace(/\\/g, "/").toLowerCase();
+        const normalizedKey = key?.replace(/\\/g, "/").toLowerCase();
 
         setPlaylists(prev => {
             const next = [...prev];
@@ -283,7 +282,11 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             );
 
             if (existingIndex === -1) {
-                return new Set([...next, { name: cleanedName, songs: [key] }]);
+                return new Set([...next, { name: cleanedName, songs: key ? [key] : [] }]);
+            }
+
+            if (!key || !normalizedKey) {
+                return new Set(next);
             }
 
             const existing = next[existingIndex];
@@ -307,6 +310,14 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         })
     }
 
+    function deletePlaylist(name: string) {
+        if (name.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) return;
+
+        setPlaylists((current) => new Set(
+            [...current].filter((playlist) => playlist.name.toLowerCase() !== name.toLowerCase()),
+        ));
+    }
+
     return (
         <PlayerContext.Provider
             value={{
@@ -319,6 +330,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 volume,
                 autoplay,
                 playlists: playlistsWithFavorites,
+                setQueue,
                 playSong,
                 pause,
                 play,
@@ -330,6 +342,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 playPrevious,
                 toggleAutoplay,
                 addPlaylist,
+                deletePlaylist,
             }}
         >
             {children}
