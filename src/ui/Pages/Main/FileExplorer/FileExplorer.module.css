@@ -30,6 +30,14 @@
     align-items: center;
     padding: 0px;
     cursor: pointer;
+    border-right: 3px solid #101010;
+    border-bottom: 3px solid #101010;
+    border-left: 3px solid #3d3d3d;
+    border-top: 3px solid #3d3d3d;
+}
+
+.module button:hover {
+    background-color: var(--surface-hover);
 }
 
 .control > button{
@@ -44,19 +52,16 @@
 
 .name {
     text-align: center;
-    padding: 10px;
+    padding: 15px;
     background-color: var(--surface);
-    border-right: 3px solid #000000;
-    border-bottom: 3px solid #000000;
-    border-left: 3px solid #3d3d3d;
-    border-top: 3px solid #3d3d3d;
     margin: 0px;
+    border-bottom: 2px solid var(--surface-selected);
 }
 
 .children {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 10px;
+    padding: 10px 0px;
     display: flex;
     gap: 3px;
     flex-direction: column;
@@ -72,8 +77,6 @@
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding: 10px;
     border-top: 1px solid var(--surface-hover);
 }
 

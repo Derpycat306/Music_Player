@@ -13,6 +13,7 @@
         "preview": "vite preview",
         "transpile:electron": "tsc --project src/electron/tsconfig.json",
         "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
+        "release:build": "npm run transpile:electron && npm run build && electron-builder --win --x64 --publish never",
         "release": "npm run transpile:electron && npm run build && electron-builder --win --x64 --publish always"
     },
     "dependencies": {

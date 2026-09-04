@@ -26,6 +26,20 @@ jobs:
         run: npm ci
 
       - name: Build and publish
-        run: npm run release
+        run: npm run release:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $assets = @(
+            Get-ChildItem -Path "dist" -Filter "*.exe" -File
+            Get-ChildItem -Path "dist" -Filter "*.blockmap" -File
+            Get-Item -Path "dist/latest.yml"
+          )
+          gh release create $env:GITHUB_REF_NAME $assets.FullName `
+            --title "Music Player $env:GITHUB_REF_NAME" `
+            --generate-notes

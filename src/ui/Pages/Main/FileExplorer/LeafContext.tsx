@@ -1,6 +1,6 @@
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 import { useExplorer } from "../ExplorerContext";
-import styles from "../SongListing/Songs/Item/SongContext.module.css";
+import ContextMenu from "../../../ContextMenu/ContextMenu";
 
 type Props = {
     id: string;
@@ -28,20 +28,17 @@ function PlaylistContext({id, name, X, Y, isPlaylist, onClose}: Props) {
         const topSong = queue.at(0)
         if(topSong !== undefined)
             playSong(topSong);
+        onClose();
     }
 
     return (
-        <div
-            className={styles.contextMenu}
-            onClick={(event) => event.stopPropagation()}
-            style={{ position: "fixed", left: X, top: Y }}
-        >
+        <ContextMenu x={X} y={Y} onClose={onClose}>
             {isPlaylist && name !== "Favorites" && (
                 <button onClick={() => onDelete(name)}>Delete Playlist</button>
             )}
 
             <button onClick={onShuffle}>Shuffle</button>
-        </div>
+        </ContextMenu>
     );
 }
 

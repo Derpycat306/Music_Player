@@ -5,14 +5,8 @@
     align-items: center;
     display: flex;
     flex-direction: row;
-    box-shadow: 4px 8px 8px #0a0a0a;
     transition: transform 0.3s ease;
     cursor: pointer;
-    padding: 7px;
-    border-right: 3px solid #000000;
-    border-bottom: 3px solid #000000;
-    border-left: 3px solid #3d3d3d;
-    border-top: 3px solid #3d3d3d;
 }
 
 .item:hover {
@@ -26,11 +20,10 @@
 
 .icon {
     flex: 0 0 auto;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     overflow: hidden;
     border-radius: 3px;
-    margin-right: 5px;
 }
 
 .icon img {
@@ -45,5 +38,5 @@
     text-align: center;
     min-width: 0;
     font-size: 12px;
-    margin: 0px;
+    margin: 15px 5px;
 }

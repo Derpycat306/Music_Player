@@ -1,4 +1,6 @@
 .main {
+    position: relative;
+    z-index: 0;
     height: 100%;
     width: 100%;
     min-height: 0;
@@ -68,6 +70,12 @@
     font-size: 0.8rem;
 }
 
+.emptyState {
+    margin: 0;
+    padding: 24px 0;
+    color: var(--text-muted);
+}
+
 .cardGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
@@ -75,21 +83,31 @@
 }
 
 .card {
+    display: block;
+    width: 100%;
     min-width: 0;
     padding: 12px;
     border: 1px solid transparent;
     border-radius: 6px;
     background: rgba(17, 17, 19, 0.62);
     color: var(--text);
+    font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background-color 160ms ease, transform 160ms ease;
+    appearance: none;
 }
 
-.card:hover,
-.card:focus-visible {
+.card:hover {
     background: var(--surface-hover);
-    transform: translateY(-3px);
+}
+
+.card:focus-visible {
+    outline: 2px solid rgba(214, 183, 255, 0.75);
+    outline-offset: 2px;
+}
+
+.card:focus:not(:focus-visible) {
+    outline: none;
 }
 
 .cardArt,
@@ -107,6 +125,7 @@
 
 .cardArt img,
 .heroArt img {
+    pointer-events: none;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -114,6 +133,7 @@
 
 .cardArt span,
 .heroArt span {
+    pointer-events: none;
     color: rgba(255, 255, 255, 0.8);
     font-size: 3rem;
 }

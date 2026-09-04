@@ -7,17 +7,24 @@ function artworkFor(child: ExplorerChild): string | null {
     return child.children.find((entry) => entry.kind === "leaf")?.art ?? null;
 }
 
-function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (id: string) => void }) {
+function cardType(child: ExplorerChild): string {
+    if (child.kind === "directory") return "Artist";
+    if (child.id.startsWith("album:")) return "Album";
+    if (child.id.startsWith("playlist:")) return "Playlist";
+    return "Collection";
+}
+
+function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: ExplorerChild) => void }) {
     const art = artworkFor(child);
 
     return (
-        <button className={styles.card} onClick={() => onSelect(child.id)}>
+        <button type="button" className={styles.card} onClick={() => onSelect(child)}>
             <div className={`${styles.cardArt} ${!art ? styles.cardArtEmpty : ""}`}>
                 {art && <img src={`music:///song?path=${encodeURIComponent(art)}`} alt="" />}
                 {!art && <span>{child.kind === "directory" ? "♪" : "♫"}</span>}
             </div>
             <strong>{child.name}</strong>
-            <span>{child.kind === "directory" ? "Artist" : "Playlist"}</span>
+            <span>{cardType(child)}</span>
         </button>
     );
 }
@@ -29,6 +36,7 @@ function TrackTable({ songs }: { songs: SongListing[] }) {
         <div className={styles.trackTable}>
             {songs.map((listing, index) => (
                 <button
+                    type="button"
                     className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""}`}
                     key={listing.song.id}
                     onClick={() => void playSong(listing)}
@@ -52,8 +60,18 @@ function formatDuration(seconds: number): string {
 }
 
 function MainPanel() {
-    const { currentSelectedType, currentSelected, folder, traverse } = useExplorer();
-    const { songs, playSong, setQueue } = usePlayer();
+    const {
+        currentSelectedType,
+        currentSelected,
+        currentSongs,
+        currentParent,
+        currentChildren,
+        canReturn,
+        folder,
+        traverse,
+        selectLeaf,
+    } = useExplorer();
+    const { songs, playSong } = usePlayer();
 
     const artists = folder.artistsRoot.children;
     const playlists = folder.playlistsRoot.children;
@@ -62,16 +80,18 @@ function MainPanel() {
         .slice(0, 8);
 
     function playSelection(leaf: ExplorerLeaf, shuffle = false) {
-        const queue = [...leaf.songs];
-        if (shuffle) {
-            for (let index = queue.length - 1; index > 0; index -= 1) {
-                const randomIndex = Math.floor(Math.random() * (index + 1));
-                [queue[index], queue[randomIndex]] = [queue[randomIndex]!, queue[index]!];
-            }
-        }
-        setQueue(queue);
+        const queue = selectLeaf(leaf.id, shuffle);
         const firstSong = queue[0];
         if (firstSong) void playSong(firstSong);
+    }
+
+    function selectCard(child: ExplorerChild) {
+        if (child.kind === "directory") {
+            traverse(child.id);
+            return;
+        }
+
+        selectLeaf(child.id);
     }
 
     function HomeView() {
@@ -90,7 +110,7 @@ function MainPanel() {
                     </div>
                     <div className={styles.cardGrid}>
                         {artists.slice(0, 6).map((artist) => (
-                            <Card key={artist.id} child={artist} onSelect={traverse} />
+                            <Card key={artist.id} child={artist} onSelect={selectCard} />
                         ))}
                     </div>
                 </section>
@@ -100,7 +120,7 @@ function MainPanel() {
                         <div className={styles.sectionHeading}><h2>Albums</h2></div>
                         <div className={styles.cardGrid}>
                             {albums.map((album) => (
-                                <Card key={album.id} child={album} onSelect={traverse} />
+                                <Card key={album.id} child={album} onSelect={selectCard} />
                             ))}
                         </div>
                     </section>
@@ -111,11 +131,38 @@ function MainPanel() {
                         <div className={styles.sectionHeading}><h2>Your playlists</h2></div>
                         <div className={styles.cardGrid}>
                             {playlists.slice(0, 8).map((playlist) => (
-                                <Card key={playlist.id} child={playlist} onSelect={traverse} />
+                                <Card key={playlist.id} child={playlist} onSelect={selectCard} />
                             ))}
                         </div>
                     </section>
                 )}
+            </>
+        );
+    }
+
+    function DirectoryView() {
+        return (
+            <>
+                <section className={styles.welcome}>
+                    <p className={styles.eyebrow}>Artist</p>
+                    <h1>{currentParent.name}</h1>
+                    <p>{currentChildren.length} {currentChildren.length === 1 ? "release" : "releases"}</p>
+                </section>
+
+                <section className={styles.section}>
+                    <div className={styles.sectionHeading}>
+                        <h2>Albums</h2>
+                    </div>
+                    {currentChildren.length > 0 ? (
+                        <div className={styles.cardGrid}>
+                            {currentChildren.map((child) => (
+                                <Card key={child.id} child={child} onSelect={selectCard} />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={styles.emptyState}>No albums found for this artist.</p>
+                    )}
+                </section>
             </>
         );
     }
@@ -139,15 +186,19 @@ function MainPanel() {
                     </div>
                 </section>
                 <div className={styles.actions}>
-                    <button className={styles.primaryAction} onClick={() => playSelection(currentSelected)}>Play</button>
-                    <button className={styles.secondaryAction} onClick={() => playSelection(currentSelected, true)}>Shuffle</button>
+                    <button type="button" className={styles.primaryAction} onClick={() => playSelection(currentSelected)}>Play</button>
+                    <button type="button" className={styles.secondaryAction} onClick={() => playSelection(currentSelected, true)}>Shuffle</button>
                 </div>
-                <TrackTable songs={currentSelected.songs} />
+                <TrackTable songs={currentSongs} />
             </>
         );
     }
 
-    const view = currentSelectedType === "none" ? <HomeView /> : <DetailView />;
+    const view = currentSelectedType !== "none"
+        ? <DetailView />
+        : canReturn
+            ? <DirectoryView />
+            : <HomeView />;
 
     return (
         <div className={styles.main}>

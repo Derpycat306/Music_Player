@@ -18,14 +18,12 @@ text,
 :root {
     --dark: #0c0c0c; 
     --background: #18181b;
-    --sidebar: #111113;
-    --header: #070708;
-    --surface: #1a1920;
-    --surface-selected: rgb(15, 14, 18);
-    --surface-hover: #272331;
+    --sidebar: #070708;
+    --surface-selected: #1b1b1f;
+    --surface-hover: #1c1b20;
 
     --text: #d1d3d3;
-    --text-muted: #8e8f90;
+    --text-muted: #a7a7a7;
 
     --accent: #311e5b;
 
@@ -35,15 +33,16 @@ text,
 }
 
 ::-webkit-scrollbar {
-    background-color: var(--sidebar);
+    background-color: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: var(--surface);
-    border-right: 3px solid #000000;
-    border-bottom: 3px solid #000000;
+    background-color: var(--sidebar);
+    border-right: 3px solid #101010;
+    border-bottom: 3px solid #101010;
     border-left: 3px solid #3d3d3d;
     border-top: 3px solid #3d3d3d;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

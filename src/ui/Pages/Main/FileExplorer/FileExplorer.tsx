@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useExplorer } from "../ExplorerContext";
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 import styles from "./FileExplorer.module.css";
@@ -26,12 +26,6 @@ function FileExplorer() {
         isPlaylist: boolean;
     } | null>(null);
 
-    useEffect(() => {
-        const closeContext = () => setContextMenu(null);
-        window.addEventListener("click", closeContext);
-        return () => window.removeEventListener("click", closeContext);
-    }, []);
-
     function createPlaylist() {
         const name = playlistName.trim();
         if (!name) return;
@@ -53,8 +47,6 @@ function FileExplorer() {
                     >Playlists</button>
             </div>
 
-            <div className={styles.name}>{currentParent.name}</div>
-
             <input type="text" className={styles.search}
                 placeholder={"search"}
                 onChange={(e) => {setFilter(e.target.value.toLowerCase())}}/>
@@ -63,6 +55,8 @@ function FileExplorer() {
                 Back
             </button>
             }
+
+            <div className={styles.name}>{currentParent.name}</div>
 
             <div className={styles.children}>
                 {

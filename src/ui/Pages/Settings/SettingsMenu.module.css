@@ -11,7 +11,7 @@
     height: 50px;
     padding-left: 10px;
     padding-right: 10px;
-    background-color: var(--header);
+    background-color: var(--sidebar);
     text-align: center;
     display: flex;
     flex-direction: row;

@@ -6,10 +6,8 @@
     display: flex;
     align-items: center;
     min-height: 30px;
-    padding: 5px;
+    padding: 10px 5px;
     cursor: pointer;
-    box-shadow: 4px 8px 8px #0a0a0a;
-    margin-bottom: 10px;
     font-size: 12px;
     transition: border 1s ease;
     color: var(--text-muted);

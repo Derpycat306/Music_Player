@@ -81,6 +81,7 @@ interface ExplorerContextType {
     setSelected: (id: string | null) => void
     setFilter: (filter: string) => void
     traverse: (id: string, shuffle?: boolean) => SongListing[]
+    selectLeaf: (id: string, shuffle?: boolean) => SongListing[]
     returnToParent: () => void
 }
 
@@ -275,8 +276,37 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             return [];
         }
 
-        setSelected(target.id);
-        const queue = [...target.songs];
+        return selectLeaf(target.id, shuffle);
+    }
+
+    function selectLeaf(id: string, shuffle = false): SongListing[] {
+        const findLeaf = (
+            directory: ExplorerDirectory,
+            parentPath: string[] = [],
+        ): { leaf: ExplorerLeaf; path: string[] } | null => {
+            for (const child of directory.children) {
+                if (child.id === id && child.kind === "leaf") {
+                    return { leaf: child, path: parentPath };
+                }
+
+                if (child.kind === "directory") {
+                    const result = findLeaf(child, [...parentPath, child.id]);
+                    if (result) return result;
+                }
+            }
+
+            return null;
+        };
+
+        const rootType = id.startsWith("playlist:") ? "playlists" : "artists";
+        const root = rootType === "artists" ? folder.artistsRoot : folder.playlistsRoot;
+        const result = findLeaf(root);
+        if (!result) return [];
+
+        setCurrentViewType(rootType);
+        setParentIds(result.path);
+        setSelected(result.leaf.id);
+        const queue = [...result.leaf.songs];
         const orderedSongs = shuffle ? shuffleArray(queue) : queue;
         setQueue(orderedSongs);
         setCurrentSongs(orderedSongs);
@@ -310,6 +340,7 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     setSelected,
                     setFilter,
                     traverse,
+                    selectLeaf,
                     returnToParent,
                 }
             }>
