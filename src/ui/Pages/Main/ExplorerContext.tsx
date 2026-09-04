@@ -259,8 +259,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         return findLeaf(folder.artistsRoot) ?? findLeaf(folder.playlistsRoot);
     }, [currentSelectedId, folder.artistsRoot, folder.playlistsRoot]);
 
-    const currentSelectedType = useMemo<ExplorerLeafType | null>(() => {
-        if (!currentSelected) return null;
+    const currentSelectedType = useMemo<ExplorerLeafType>(() => {
+        if (!currentSelected) return "none";
         if (currentSelected.id.startsWith("album:")) return "album";
         if (currentSelected.id.startsWith("playlist:")) return "playlist";
         return "other";
