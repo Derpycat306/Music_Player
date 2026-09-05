@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useExplorer } from "../ExplorerContext";
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 import styles from "./FileExplorer.module.css";
@@ -6,16 +6,16 @@ import ListItem from "./ListItem";
 import PlaylistContext from "./LeafContext";
 
 function FileExplorer() {
-    const { addPlaylist } = usePlayer();
+    const { addPlaylist, playSong } = usePlayer();
     const {
         setFilter,
         currentViewType,
         setViewType,
-        currentParent,
         currentChildren,
-        canReturn,
-        returnToParent,
+        startQueue,
+        traverse,
     } = useExplorer()
+    const [isThinView, setIsThinView] = useState(() => window.innerWidth <= 700);
     const [playlistName, setPlaylistName] = useState("");
     const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
     const [contextMenu, setContextMenu] = useState<{
@@ -25,6 +25,25 @@ function FileExplorer() {
         Y: number;
         isPlaylist: boolean;
     } | null>(null);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(max-width: 700px)");
+        const updateView = () => setIsThinView(mediaQuery.matches);
+        updateView();
+        mediaQuery.addEventListener("change", updateView);
+
+        return () => mediaQuery.removeEventListener("change", updateView);
+    }, []);
+
+    function selectItem(id: string) {
+        const child = currentChildren.find((entry) => entry.id === id);
+        const selectedSongs = traverse(id);
+
+        if (isThinView && child?.kind === "leaf" && selectedSongs.length > 0) {
+            startQueue(selectedSongs, id);
+            void playSong(selectedSongs[0]!);
+        }
+    }
 
     function createPlaylist() {
         const name = playlistName.trim();
@@ -40,7 +59,11 @@ function FileExplorer() {
                 <button 
                     aria-pressed={currentViewType === "artists"}
                     onClick={() => setViewType("artists")}
-                    >Songs</button>
+                    >Artists</button>
+                <button 
+                    aria-pressed={currentViewType === "albums"}
+                    onClick={() => setViewType("albums")}
+                    >Albums</button>
                 <button 
                     aria-pressed={currentViewType === "playlists"}
                     onClick={() => setViewType("playlists")}
@@ -51,13 +74,7 @@ function FileExplorer() {
                 placeholder={"search"}
                 onChange={(e) => {setFilter(e.target.value.toLowerCase())}}/>
 
-            {canReturn && (
-                <button onClick={returnToParent}>
-                    Back
-                </button>
-            )}
-
-            <div className={styles.name}>{currentParent.name}</div>
+            <div className={styles.name}>{currentViewType[0].toUpperCase() + currentViewType.slice(1)}</div>
 
             <div className={styles.children}>
                 {
@@ -67,6 +84,7 @@ function FileExplorer() {
                                 key={child.id}
                                 id={child.id}
                                 name={child.name}
+                                onSelect={() => selectItem(child.id)}
                                 icon={child.art != null ? (
                                     <img
                                         src={`music:///song?path=${encodeURIComponent(child.art)}`}

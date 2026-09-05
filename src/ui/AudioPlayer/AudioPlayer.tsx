@@ -13,6 +13,7 @@ interface PlayerContextType {
     playlists: Set<Playlist>;
 
     setQueue: (queue: SongListing[]) => void;
+    queueSong: (song: SongListing) => void;
     playSong: (song: SongListing) => Promise<void>;
     pause: () => void;
     play: () => void;
@@ -181,6 +182,11 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         queueRef.current = [...queue];
     }
 
+    function queueSong(song: SongListing) {
+        if (queueRef.current.some((queued) => queued.song.id === song.song.id)) return;
+        queueRef.current = [...queueRef.current, song];
+    }
+
     async function playSong(song: SongListing) {
         const audio = audioRef.current;
         if (!audio) return;
@@ -340,6 +346,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 autoplay,
                 playlists: playlistsWithFavorites,
                 setQueue,
+                queueSong,
                 playSong,
                 pause,
                 play,

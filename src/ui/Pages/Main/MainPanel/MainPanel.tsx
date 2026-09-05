@@ -52,10 +52,12 @@ function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: Exp
 }
 
 function TrackTable({ songs }: { songs: SongListing[] }) {
-    const { playSong, currentSong, } = usePlayer();
+    const { playSong, currentSong } = usePlayer();
+    const { startQueue, panelSelection } = useExplorer();
     const pressedByPointer = useRef(false);
 
     function play(listing: SongListing) {
+        startQueue(songs, panelSelection?.id);
         void playSong(listing);
     }
 
@@ -103,22 +105,31 @@ function formatDuration(seconds: number): string {
     return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+    const result = [...array];
+
+    for (let index = result.length - 1; index > 0; index--) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [result[index], result[randomIndex]] = [result[randomIndex]!, result[index]!];
+    }
+
+    return result;
+}
+
 function MainPanel() {
     const {
-        currentSelectedType,
         currentSelectedId,
-        currentSelected,
-        currentSongs,
+        panelSongs,
         showSelectedDetail,
         recentAlbums,
-        currentParent,
-        currentChildren,
-        canReturn,
-        currentViewType,
+        panelSelection,
+        panelChildren,
+        panelCanReturn,
         returnToParent,
         folder,
         traverse,
         selectLeaf,
+        startQueue,
     } = useExplorer();
     const { songs, playSong, autoplay, toggleAutoplay } = usePlayer();
     const pressedByPointer = useRef(false);
@@ -126,19 +137,21 @@ function MainPanel() {
 
     useEffect(() => {
         contentRef.current?.scrollTo({ top: 0 });
-    }, [currentViewType, currentParent.id, currentSelectedId, showSelectedDetail]);
+    }, [panelSelection?.id, currentSelectedId, showSelectedDetail]);
 
     const artists = folder.artistsRoot.children;
     const playlists = folder.playlistsRoot.children;
-    const canGoBack = canReturn;
+    const canGoBack = panelCanReturn || panelSelection?.id.startsWith("playlist:") === true;
 
     function goBack() {
         returnToParent();
     }
 
     function playSelection(leaf: ExplorerLeaf, shuffle = false) {
-        const queue = selectLeaf(leaf.id, shuffle);
-        const firstSong = queue[0];
+        const queue = selectLeaf(leaf.id);
+        const orderedSongs = shuffle ? shuffleArray(queue) : queue;
+        startQueue(orderedSongs, leaf.id);
+        const firstSong = orderedSongs[0];
         if (firstSong) void playSong(firstSong);
     }
 
@@ -222,17 +235,17 @@ function MainPanel() {
             <>
                 <section className={styles.welcome}>
                     <p className={styles.eyebrow}>Artist</p>
-                    <h1>{currentParent.name}</h1>
-                    <p>{currentChildren.length} {currentChildren.length === 1 ? "release" : "releases"}</p>
+                    <h1>{panelSelection?.name}</h1>
+                    <p>{panelChildren.length} {panelChildren.length === 1 ? "release" : "releases"}</p>
                 </section>
 
                 <section className={styles.section}>
                     <div className={styles.sectionHeading}>
                         <h2>Albums</h2>
                     </div>
-                    {currentChildren.length > 0 ? (
+                    {panelChildren.length > 0 ? (
                         <div className={styles.cardGrid}>
-                            {currentChildren.map((child) => (
+                            {panelChildren.map((child) => (
                                 <Card key={child.id} child={child} onSelect={selectCard} />
                             ))}
                         </div>
@@ -244,37 +257,12 @@ function MainPanel() {
         );
     }
 
-    function PlaylistView() {
-        return (
-            <>
-                <section className={styles.welcome}>
-                    <p className={styles.eyebrow}>Your music</p>
-                    <h1>Playlists</h1>
-                    <p>{playlists.length} {playlists.length === 1 ? "playlist" : "playlists"}</p>
-                </section>
-
-                <section className={styles.section}>
-                    {playlists.length > 0 ? (
-                        <div className={styles.cardGrid}>
-                            {playlists.map((playlist) => (
-                                <Card key={playlist.id} child={playlist} onSelect={selectCard} />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className={styles.emptyState}>Create a playlist to see it here.</p>
-                    )}
-                </section>
-            </>
-        );
-    }
-
-    const selectedLeafIsInCurrentContext = showSelectedDetail && currentSelected !== null &&
-        currentChildren.some((child) => child.id === currentSelected.id);
+    const selectedLeafIsInCurrentContext = showSelectedDetail && panelSelection?.kind === "leaf";
 
     function DetailView() {
-        if (!currentSelected) return <HomeView />;
-        const art = currentSelected.art ?? currentSelected.songs[0]?.art;
-        const isPlaylist = currentSelectedType === "playlist";
+        if (panelSelection?.kind !== "leaf") return <HomeView />;
+        const art = panelSelection.art ?? panelSelection.songs[0]?.art;
+        const isPlaylist = panelSelection.id.startsWith("playlist:");
 
         return (
             <>
@@ -285,32 +273,30 @@ function MainPanel() {
                     </div>
                     <div className={styles.heroCopy}>
                         <span>{isPlaylist ? "Playlist" : "Album"}</span>
-                        <h1>{currentSelected.name}</h1>
-                        <p>{currentSelected.songs[0]?.song.artist ?? "Your library"} · {currentSelected.songs.length} songs</p>
+                        <h1>{panelSelection.name}</h1>
+                        <p>{panelSelection.songs[0]?.song.artist ?? "Your library"} · {panelSelection.songs.length} songs</p>
                     </div>
                 </section>
                 <div className={styles.actions}>
                     <button type="button" className={styles.primaryAction}
-                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(currentSelected))}
-                        onClick={() => handleActionClick(() => playSelection(currentSelected))}>Play</button>
+                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection))}
+                        onClick={() => handleActionClick(() => playSelection(panelSelection))}>Play</button>
                     <button type="button" className={styles.secondaryAction}
-                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(currentSelected, true))}
-                        onClick={() => handleActionClick(() => playSelection(currentSelected, true))}>Shuffle</button>
+                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection, true))}
+                        onClick={() => handleActionClick(() => playSelection(panelSelection, true))}>Shuffle</button>
                     <button type="button" 
                         className={autoplay ? styles.primaryAction : styles.secondaryAction}
                         onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
                         onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
                 </div>
-                <TrackTable songs={currentSongs} />
+                <TrackTable songs={panelSongs} />
             </>
         );
     }
 
     const view = selectedLeafIsInCurrentContext
         ? <DetailView />
-        : currentViewType === "playlists" && !canReturn
-            ? <PlaylistView />
-        : canReturn
+        : panelSelection?.kind === "directory"
             ? <DirectoryView />
             : <HomeView />;
 

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react"
 import { usePlayer } from "../../AudioPlayer/AudioPlayer";
 
-export type ExplorerView = "artists" | "playlists"
+export type ExplorerView = "artists" | "albums" | "playlists"
 export type ExplorerLeafType = "none" | "album" | "playlist" | "other"
 
 export interface ExplorerNode {
@@ -25,6 +25,7 @@ export type ExplorerChild = ExplorerDirectory | ExplorerLeaf;
 
 export interface Folder {
     artistsRoot: ExplorerDirectory;
+    albumsRoot: ExplorerDirectory;
     playlistsRoot: ExplorerDirectory;
 }
 
@@ -69,11 +70,14 @@ interface ExplorerContextType {
     currentViewType: ExplorerView
     currentSelectedId: string | null
     currentSelectedType: ExplorerLeafType
-    currentParent: ExplorerDirectory
     currentChildren: ExplorerChild[]
     currentSelected: ExplorerLeaf | null
     currentSongs: SongListing[]
+    panelSongs: SongListing[]
     showSelectedDetail: boolean
+    panelSelection: ExplorerChild | null
+    panelChildren: ExplorerChild[]
+    panelCanReturn: boolean
     recentAlbums: ExplorerLeaf[]
     canReturn: boolean
     folder: Folder
@@ -84,6 +88,7 @@ interface ExplorerContextType {
     setFilter: (filter: string) => void
     traverse: (id: string, shuffle?: boolean) => SongListing[]
     selectLeaf: (id: string, shuffle?: boolean) => SongListing[]
+    startQueue: (songs: SongListing[], selectedId?: string) => void
     returnToParent: () => void
 }
 
@@ -186,11 +191,20 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
         };
     });
 
+    const albums = artists.flatMap((artist) => artist.children);
+
     const artistsRoot: ExplorerDirectory = {
         id: "artists-root",
         name: "Artists",
         kind: "directory",
         children: artists,
+    };
+
+    const albumsRoot: ExplorerDirectory = {
+        id: "albums-root",
+        name: "Albums",
+        kind: "directory",
+        children: albums,
     };
 
     const playlistsRoot: ExplorerDirectory = {
@@ -200,10 +214,11 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
         children: playlistListings,
     };
 
-    if (!filter) return { artistsRoot, playlistsRoot };
+    if (!filter) return { artistsRoot, albumsRoot, playlistsRoot };
 
     return {
         artistsRoot: filterDirectory(artistsRoot, filter),
+        albumsRoot: filterDirectory(albumsRoot, filter),
         playlistsRoot: filterDirectory(playlistsRoot, filter),
     };
 }
@@ -213,11 +228,13 @@ const ExplorerContext = createContext<ExplorerContextType | null>(null)
 export function ExplorerProvider({ children }: PropsWithChildren) {
     const { songs, covers, playlists, setQueue } = usePlayer();
     const [currentViewType, setCurrentViewType] = useState<ExplorerView>("artists")
-    const [parentIds, setParentIds] = useState<string[]>([])
     const [currentSelectedId, setSelected] = useState<string | null>(null)
     const [currentSongs, setCurrentSongs] = useState<SongListing[]>([])
+    const [panelSongs, setPanelSongs] = useState<SongListing[]>([])
     const [recentAlbumIds, setRecentAlbumIds] = useState<string[]>([])
     const [showSelectedDetail, setShowSelectedDetail] = useState(false)
+    const [panelSelectionId, setPanelSelectionId] = useState<string | null>(null)
+    const [panelParentId, setPanelParentId] = useState<string | null>(null)
     const [filter, setFilter] = useState("");
 
     useEffect(() => {
@@ -235,19 +252,35 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         );
     }, [songs, covers, playlists, filter])
 
-    const currentRoot = currentViewType === "artists" ? folder.artistsRoot : folder.playlistsRoot;
+    const currentRoot = currentViewType === "artists"
+        ? folder.artistsRoot
+        : currentViewType === "albums"
+            ? folder.albumsRoot
+            : folder.playlistsRoot;
 
-    const currentParent = useMemo(() => {
-        let parent = currentRoot;
-        for (const id of parentIds) {
-            const child = parent.children.find((listing) => listing.id === id);
-            if (!child || child.kind !== "directory") break;
-            parent = child;
-        }
-        return parent;
-    }, [currentRoot, parentIds])
+    const currentChildren = currentRoot.children;
 
-    const currentChildren = currentParent.children;
+    const findNode = useMemo(() => {
+        const find = (
+            directory: ExplorerDirectory,
+            id: string,
+            parent: ExplorerDirectory | null = null,
+        ): { node: ExplorerChild; parent: ExplorerDirectory | null } | null => {
+            for (const child of directory.children) {
+                if (child.id === id) return { node: child, parent };
+                if (child.kind === "directory") {
+                    const result = find(child, id, child);
+                    if (result) return result;
+                }
+            }
+            return null;
+        };
+
+        return (id: string) => find(folder.artistsRoot, id) ?? find(folder.albumsRoot, id) ?? find(folder.playlistsRoot, id);
+    }, [folder]);
+
+    const panelSelection = panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
+    const panelChildren = panelSelection?.kind === "directory" ? panelSelection.children : [];
 
     const currentSelected = useMemo(() => {
         if (!currentSelectedId) return null;
@@ -296,19 +329,20 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     }, [folder.artistsRoot, recentAlbumIds]);
 
     function traverse(id: string, shuffle = false): SongListing[] {
-        const target = currentChildren.find((child) => child.id === id);
+        const target = findNode(id)?.node;
         if (!target) return [];
 
         if (target.kind === "directory") {
             setShowSelectedDetail(false);
-            setParentIds((ids) => [...ids, target.id]);
+            setPanelSelectionId(target.id);
+            setPanelParentId(null);
             return [];
         }
 
         return selectLeaf(target.id, shuffle);
     }
 
-    function selectLeaf(id: string, shuffle = false): SongListing[] {
+    function selectLeaf(id: string, _shuffle = false): SongListing[] {
         const findLeaf = (
             directory: ExplorerDirectory,
             parentPath: string[] = [],
@@ -332,9 +366,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         const result = findLeaf(root);
         if (!result) return [];
 
-        setCurrentViewType(rootType);
-        setParentIds(result.path);
-        setSelected(result.leaf.id);
+        setPanelSelectionId(result.leaf.id);
+        setPanelParentId(result.path.at(-1) ?? null);
         setShowSelectedDetail(true);
         if (result.leaf.id.startsWith("album:")) {
             setRecentAlbumIds((ids) => {
@@ -343,22 +376,25 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                 return nextIds;
             });
         }
-        const queue = [...result.leaf.songs];
-        const orderedSongs = shuffle ? shuffleArray(queue) : queue;
-        setQueue(orderedSongs);
-        setCurrentSongs(orderedSongs);
-        return orderedSongs;
+        const songsForView = [...result.leaf.songs];
+        setPanelSongs(songsForView);
+        return _shuffle ? shuffleArray(songsForView) : songsForView;
+    }
+
+    function startQueue(songsForQueue: SongListing[], selectedId?: string) {
+        setQueue(songsForQueue);
+        setCurrentSongs(songsForQueue);
+        if (selectedId) setSelected(selectedId);
     }
 
     function returnToParent() {
         setShowSelectedDetail(false);
-        setParentIds((ids) => ids.slice(0, -1));
+        setPanelSelectionId(panelParentId);
+        setPanelParentId(null);
     }
 
     function setViewType(view: ExplorerView) {
-        setShowSelectedDetail(false);
         setCurrentViewType(view);
-        setParentIds([]);
     }
 
     return (
@@ -368,13 +404,16 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     currentViewType,
                     currentSelectedId,
                     currentSelectedType,
-                    currentParent,
                     currentChildren,
                     currentSelected,
                     currentSongs,
+                    panelSongs,
                     showSelectedDetail,
+                    panelSelection,
+                    panelChildren,
+                    panelCanReturn: panelParentId !== null || panelSelection?.kind === "directory",
                     recentAlbums,
-                    canReturn: parentIds.length > 0,
+                    canReturn: false,
                     folder,
                     filter,
                     setViewType,
@@ -382,6 +421,7 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     setFilter,
                     traverse,
                     selectLeaf,
+                    startQueue,
                     returnToParent,
                 }
             }>

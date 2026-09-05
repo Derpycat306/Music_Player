@@ -11,7 +11,7 @@ type Props = {
 };
 
 function SongContext({song, X, Y, onClose}: Props) {
-    const { isFavorite, toggleFavorite, addPlaylist, playlists } = usePlayer();
+    const { isFavorite, toggleFavorite, addPlaylist, queueSong, playlists } = usePlayer();
     const [context, setContext] = useState<"default" | "playlist">("default");
     const availablePlaylists = [...playlists].filter(
         (playlist) => playlist.name.toLowerCase() !== "favorites",
@@ -21,6 +21,12 @@ function SongContext({song, X, Y, onClose}: Props) {
         <ContextMenu x={X} y={Y} onClose={onClose}>
             {context === "default" ? (
             <>
+                <button onClick={() => {
+                    queueSong({song, art: null});
+                    onClose();
+                }}>
+                    Queue Song
+                </button>
                 <button onClick={() => toggleFavorite(song.id)}>
                     {isFavorite(song.id) ? "Remove from Favorites" : "Add to Favorites"}
                 </button>
