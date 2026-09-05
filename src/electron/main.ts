@@ -9,6 +9,7 @@ import { savedData } from "./saveHandler.js";
 import "./excelSaver.js";
 
 const autoUpdater = electronUpdater.autoUpdater;
+autoUpdater.autoDownload = false;
 
 autoUpdater.logger = console;
 autoUpdater.on("error", (error) => {

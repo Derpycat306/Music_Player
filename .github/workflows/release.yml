@@ -15,6 +15,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history to get proper tag info
+          
+      - name: Get the tag name
+        id: get_tag
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -41,9 +48,9 @@ jobs:
             throw "Expected exactly three release artifacts, found $($assets.Count)."
           }
 
-          gh release create "$env:GITHUB_REF_NAME" `
+          gh release create "${{ steps.get_tag.outputs.TAG_NAME }}" `
             --repo "$env:GITHUB_REPOSITORY" `
-            --title "Music Player $env:GITHUB_REF_NAME" `
+            --title "Music Player ${{ steps.get_tag.outputs.TAG_NAME }}" `
             --draft `
             --generate-notes `
             $assets.FullName
