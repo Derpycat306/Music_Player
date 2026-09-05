@@ -167,8 +167,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             audio.removeEventListener("loadedmetadata", updateDuration);
             audio.removeEventListener("ended", ended);
             disposed = true;
-            subscribe();
-            saveSubscribe();
+            subscribe;
+            saveSubscribe;
         };
 
     }, []);
