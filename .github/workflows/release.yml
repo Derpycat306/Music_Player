@@ -16,12 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history to get proper tag info
-          
-      - name: Get the tag name
-        id: get_tag
-        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        shell: bash
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -35,24 +30,14 @@ jobs:
       - name: Build Windows artifacts
         run: npm run release:build
 
-      - name: Create one draft release with all artifacts
-        shell: pwsh
-        run: |
-          $assets = @(
-            Get-ChildItem -Path dist -File -Filter *.exe
-            Get-ChildItem -Path dist -File -Filter *.blockmap
-            Get-ChildItem -Path dist -File -Filter latest.yml
-          )
-
-          if ($assets.Count -ne 3) {
-            throw "Expected exactly three release artifacts, found $($assets.Count)."
-          }
-
-          gh release create "${{ steps.get_tag.outputs.TAG_NAME }}" `
-            --repo "$env:GITHUB_REPOSITORY" `
-            --title "Music Player ${{ steps.get_tag.outputs.TAG_NAME }}" `
-            --draft `
-            --generate-notes `
-            $assets.FullName
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
+          draft: true
+          generate_release_notes: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
