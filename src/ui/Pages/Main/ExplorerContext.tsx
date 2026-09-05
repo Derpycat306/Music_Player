@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type PropsWithChildren } from "react"
+import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react"
 import { usePlayer } from "../../AudioPlayer/AudioPlayer";
 
 export type ExplorerView = "artists" | "playlists"
@@ -73,6 +73,8 @@ interface ExplorerContextType {
     currentChildren: ExplorerChild[]
     currentSelected: ExplorerLeaf | null
     currentSongs: SongListing[]
+    showSelectedDetail: boolean
+    recentAlbums: ExplorerLeaf[]
     canReturn: boolean
     folder: Folder
     filter: string
@@ -214,7 +216,15 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     const [parentIds, setParentIds] = useState<string[]>([])
     const [currentSelectedId, setSelected] = useState<string | null>(null)
     const [currentSongs, setCurrentSongs] = useState<SongListing[]>([])
+    const [recentAlbumIds, setRecentAlbumIds] = useState<string[]>([])
+    const [showSelectedDetail, setShowSelectedDetail] = useState(false)
     const [filter, setFilter] = useState("");
+
+    useEffect(() => {
+        void window.electron.settings.get().then((settings) => {
+            setRecentAlbumIds(settings.recentAlbums ?? []);
+        });
+    }, []);
 
     const folder = useMemo(() => {
         return build(
@@ -267,11 +277,30 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         return "other";
     }, [currentSelected]);
 
+    const recentAlbums = useMemo(() => {
+        const albums = new Map<string, ExplorerLeaf>();
+        const collectAlbums = (directory: ExplorerDirectory) => {
+            for (const child of directory.children) {
+                if (child.kind === "leaf" && child.id.startsWith("album:")) {
+                    albums.set(child.id, child);
+                } else if (child.kind === "directory") {
+                    collectAlbums(child);
+                }
+            }
+        };
+
+        collectAlbums(folder.artistsRoot);
+        return recentAlbumIds
+            .map((id) => albums.get(id))
+            .filter((album): album is ExplorerLeaf => album !== undefined);
+    }, [folder.artistsRoot, recentAlbumIds]);
+
     function traverse(id: string, shuffle = false): SongListing[] {
         const target = currentChildren.find((child) => child.id === id);
         if (!target) return [];
 
         if (target.kind === "directory") {
+            setShowSelectedDetail(false);
             setParentIds((ids) => [...ids, target.id]);
             return [];
         }
@@ -306,6 +335,14 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         setCurrentViewType(rootType);
         setParentIds(result.path);
         setSelected(result.leaf.id);
+        setShowSelectedDetail(true);
+        if (result.leaf.id.startsWith("album:")) {
+            setRecentAlbumIds((ids) => {
+                const nextIds = [result.leaf.id, ...ids.filter((albumId) => albumId !== result.leaf.id)].slice(0, 8);
+                window.electron.settings.set({ recentAlbums: nextIds });
+                return nextIds;
+            });
+        }
         const queue = [...result.leaf.songs];
         const orderedSongs = shuffle ? shuffleArray(queue) : queue;
         setQueue(orderedSongs);
@@ -314,10 +351,12 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     }
 
     function returnToParent() {
+        setShowSelectedDetail(false);
         setParentIds((ids) => ids.slice(0, -1));
     }
 
     function setViewType(view: ExplorerView) {
+        setShowSelectedDetail(false);
         setCurrentViewType(view);
         setParentIds([]);
     }
@@ -333,6 +372,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     currentChildren,
                     currentSelected,
                     currentSongs,
+                    showSelectedDetail,
+                    recentAlbums,
                     canReturn: parentIds.length > 0,
                     folder,
                     filter,

@@ -4,7 +4,9 @@ import path from "path";
 
 const DEFAULT_SETTINGS : Settings = {
     baseFolder: null,
-    volume: 100
+    volume: 100,
+    autoplay: false,
+    recentAlbums: [],
 }
 
 const dataPath = path.join(app.getPath("userData"), "Saved")

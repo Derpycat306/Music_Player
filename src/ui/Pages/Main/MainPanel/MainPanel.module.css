@@ -16,6 +16,19 @@
     padding: 34px clamp(20px, 4vw, 56px) 48px;
 }
 
+.backButton {
+    position: absolute;
+    top: 34px;
+    right: clamp(20px, 4vw, 56px);
+}
+
+@media (max-width: 999px) {
+    .backButton {
+        right: auto;
+        left: clamp(20px, 4vw, 56px);
+    }
+}
+
 .welcome {
     margin-bottom: 34px;
 }

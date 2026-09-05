@@ -63,4 +63,6 @@ type Playlist = {
 type Settings = {
     baseFolder: string | null;
     volume: number;
+    autoplay: boolean;
+    recentAlbums: string[];
 };

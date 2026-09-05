@@ -111,6 +111,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 (playlist) => playlist.name.toLowerCase() !== FAVORITES_PLAYLIST_NAME.toLowerCase(),
             )));
             setVolume(settings.volume)
+            setAutoplay(settings.autoplay ?? false);
         }
         init();
 
@@ -156,7 +157,10 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         audio.addEventListener("ended", ended);
         const subscribe = window.electron.subscribe(updateDirectory);
         const saveSubscribe = window.electron.subscribeToSave(async () => {
-            window.electron.settings.set({volume: volumeRef.current});
+            window.electron.settings.set({
+                volume: volumeRef.current,
+                autoplay: autoplayRef.current,
+            });
             window.electron.favorites.set([...favoritesRef.current]);
             window.electron.playlists.set([...playlistsRef.current]);
         })

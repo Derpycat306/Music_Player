@@ -51,10 +51,11 @@ function FileExplorer() {
                 placeholder={"search"}
                 onChange={(e) => {setFilter(e.target.value.toLowerCase())}}/>
 
-            {canReturn && <button onClick={returnToParent}>
-                Back
-            </button>
-            }
+            {canReturn && (
+                <button onClick={returnToParent}>
+                    Back
+                </button>
+            )}
 
             <div className={styles.name}>{currentParent.name}</div>
 

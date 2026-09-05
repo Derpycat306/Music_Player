@@ -1,5 +1,5 @@
 import styles from "./MainPanel.module.css";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useExplorer, type ExplorerChild, type ExplorerLeaf } from "../ExplorerContext";
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 
@@ -106,23 +106,35 @@ function formatDuration(seconds: number): string {
 function MainPanel() {
     const {
         currentSelectedType,
+        currentSelectedId,
         currentSelected,
         currentSongs,
+        showSelectedDetail,
+        recentAlbums,
         currentParent,
         currentChildren,
         canReturn,
+        currentViewType,
+        returnToParent,
         folder,
         traverse,
         selectLeaf,
     } = useExplorer();
     const { songs, playSong, autoplay, toggleAutoplay } = usePlayer();
     const pressedByPointer = useRef(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        contentRef.current?.scrollTo({ top: 0 });
+    }, [currentViewType, currentParent.id, currentSelectedId, showSelectedDetail]);
 
     const artists = folder.artistsRoot.children;
     const playlists = folder.playlistsRoot.children;
-    const albums = artists
-        .flatMap((artist) => artist.kind === "directory" ? artist.children : [])
-        .slice(0, 8);
+    const canGoBack = canReturn;
+
+    function goBack() {
+        returnToParent();
+    }
 
     function playSelection(leaf: ExplorerLeaf, shuffle = false) {
         const queue = selectLeaf(leaf.id, shuffle);
@@ -165,23 +177,27 @@ function MainPanel() {
                 </section>
 
                 <section className={styles.section}>
-                    <div className={styles.sectionHeading}>
-                        <h2>Quick picks</h2>
-                        <span>{songs.length} songs in your library</span>
-                    </div>
-                    <div className={styles.cardGrid}>
-                        {artists.slice(0, 6).map((artist) => (
-                            <Card key={artist.id} child={artist} onSelect={selectCard} />
-                        ))}
-                    </div>
+                    <div className={styles.sectionHeading}><h2>Recently viewed albums</h2></div>
+                    {recentAlbums.length > 0 ? (
+                        <div className={styles.cardGrid}>
+                            {recentAlbums.map((album) => (
+                                <Card key={album.id} child={album} onSelect={selectCard} />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={styles.emptyState}>Albums you open will appear here.</p>
+                    )}
                 </section>
 
-                {albums.length > 0 && (
+                {artists.length > 0 && (
                     <section className={styles.section}>
-                        <div className={styles.sectionHeading}><h2>Albums</h2></div>
+                        <div className={styles.sectionHeading}>
+                            <h2>Artists</h2>
+                            <span>{songs.length} songs in your library</span>
+                        </div>
                         <div className={styles.cardGrid}>
-                            {albums.map((album) => (
-                                <Card key={album.id} child={album} onSelect={selectCard} />
+                            {artists.map((artist) => (
+                                <Card key={artist.id} child={artist} onSelect={selectCard} />
                             ))}
                         </div>
                     </section>
@@ -228,6 +244,33 @@ function MainPanel() {
         );
     }
 
+    function PlaylistView() {
+        return (
+            <>
+                <section className={styles.welcome}>
+                    <p className={styles.eyebrow}>Your music</p>
+                    <h1>Playlists</h1>
+                    <p>{playlists.length} {playlists.length === 1 ? "playlist" : "playlists"}</p>
+                </section>
+
+                <section className={styles.section}>
+                    {playlists.length > 0 ? (
+                        <div className={styles.cardGrid}>
+                            {playlists.map((playlist) => (
+                                <Card key={playlist.id} child={playlist} onSelect={selectCard} />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={styles.emptyState}>Create a playlist to see it here.</p>
+                    )}
+                </section>
+            </>
+        );
+    }
+
+    const selectedLeafIsInCurrentContext = showSelectedDetail && currentSelected !== null &&
+        currentChildren.some((child) => child.id === currentSelected.id);
+
     function DetailView() {
         if (!currentSelected) return <HomeView />;
         const art = currentSelected.art ?? currentSelected.songs[0]?.art;
@@ -263,15 +306,28 @@ function MainPanel() {
         );
     }
 
-    const view = currentSelectedType !== "none"
+    const view = selectedLeafIsInCurrentContext
         ? <DetailView />
+        : currentViewType === "playlists" && !canReturn
+            ? <PlaylistView />
         : canReturn
             ? <DirectoryView />
             : <HomeView />;
 
     return (
         <div className={styles.main}>
-            <div className={styles.content}>{view}</div>
+            <div ref={contentRef} className={styles.content}>
+                {canGoBack && (
+                    <button
+                        type="button"
+                        className={`${styles.secondaryAction} ${styles.backButton}`}
+                        onClick={goBack}
+                    >
+                        Back
+                    </button>
+                )}
+                {view}
+            </div>
         </div>
     );
 }
