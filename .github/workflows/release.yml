@@ -25,7 +25,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish
-        run: npm run release
+      - name: Build Windows artifacts
+        run: npm run release:build
+
+      - name: Create one draft release with all artifacts
+        shell: pwsh
+        run: |
+          $assets = @(
+            Get-ChildItem -Path dist -File -Filter *.exe
+            Get-ChildItem -Path dist -File -Filter *.blockmap
+            Get-ChildItem -Path dist -File -Filter latest.yml
+          )
+
+          if ($assets.Count -ne 3) {
+            throw "Expected exactly three release artifacts, found $($assets.Count)."
+          }
+
+          gh release create "$env:GITHUB_REF_NAME" `
+            --repo "$env:GITHUB_REPOSITORY" `
+            --title "Music Player $env:GITHUB_REF_NAME" `
+            --draft `
+            --generate-notes `
+            $assets.FullName
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -95,12 +95,16 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
+        let disposed = false;
 
         const init = async () => {
-            updateDirectory(await window.electron.getSongList())
+            const directory = await window.electron.getSongList();
+            if (disposed) return;
+            updateDirectory(directory)
             const fav: string[] = await window.electron.favorites.get();
             const pls: Playlist[] = await window.electron.playlists.get();
             const settings: Settings | null = await window.electron.settings.get();
+            if (disposed) return;
 
             setFavorites(new Set(fav));
             setPlaylists(new Set(pls.filter(
@@ -162,8 +166,9 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             audio.removeEventListener("timeupdate", updateTime);
             audio.removeEventListener("loadedmetadata", updateDuration);
             audio.removeEventListener("ended", ended);
-            subscribe;
-            saveSubscribe;
+            disposed = true;
+            subscribe();
+            saveSubscribe();
         };
 
     }, []);
@@ -262,7 +267,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     }
 
     function toggleAutoplay() {
-        setAutoplay(!autoplay)
+        setAutoplay((enabled) => !enabled)
         if(!playing){
             playNext()
         }

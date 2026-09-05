@@ -1,4 +1,5 @@
 import styles from "./MainPanel.module.css";
+import { useRef } from "react";
 import { useExplorer, type ExplorerChild, type ExplorerLeaf } from "../ExplorerContext";
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 
@@ -16,9 +17,30 @@ function cardType(child: ExplorerChild): string {
 
 function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: ExplorerChild) => void }) {
     const art = artworkFor(child);
+    const pressedByPointer = useRef(false);
+
+    function activate() {
+        onSelect(child);
+    }
+
+    function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>) {
+        if (event.button !== 0) return;
+        pressedByPointer.current = true;
+        event.preventDefault();
+        activate();
+    }
+
+    function handleClick() {
+        if (pressedByPointer.current) {
+            pressedByPointer.current = false;
+            return;
+        }
+
+        activate();
+    }
 
     return (
-        <button type="button" className={styles.card} onClick={() => onSelect(child)}>
+        <button type="button" className={styles.card} onPointerDown={handlePointerDown} onClick={handleClick}>
             <div className={`${styles.cardArt} ${!art ? styles.cardArtEmpty : ""}`}>
                 {art && <img src={`music:///song?path=${encodeURIComponent(art)}`} alt="" />}
                 {!art && <span>{child.kind === "directory" ? "♪" : "♫"}</span>}
@@ -30,7 +52,28 @@ function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: Exp
 }
 
 function TrackTable({ songs }: { songs: SongListing[] }) {
-    const { playSong, currentSong } = usePlayer();
+    const { playSong, currentSong, } = usePlayer();
+    const pressedByPointer = useRef(false);
+
+    function play(listing: SongListing) {
+        void playSong(listing);
+    }
+
+    function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>, listing: SongListing) {
+        if (event.button !== 0) return;
+        pressedByPointer.current = true;
+        event.preventDefault();
+        play(listing);
+    }
+
+    function handleClick(listing: SongListing) {
+        if (pressedByPointer.current) {
+            pressedByPointer.current = false;
+            return;
+        }
+
+        play(listing);
+    }
 
     return (
         <div className={styles.trackTable}>
@@ -39,7 +82,8 @@ function TrackTable({ songs }: { songs: SongListing[] }) {
                     type="button"
                     className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""}`}
                     key={listing.song.id}
-                    onClick={() => void playSong(listing)}
+                    onPointerDown={(event) => handlePointerDown(event, listing)}
+                    onClick={() => handleClick(listing)}
                 >
                     <span className={styles.trackNumber}>{index + 1}</span>
                     <span className={styles.trackTitle}>
@@ -71,7 +115,8 @@ function MainPanel() {
         traverse,
         selectLeaf,
     } = useExplorer();
-    const { songs, playSong } = usePlayer();
+    const { songs, playSong, autoplay, toggleAutoplay } = usePlayer();
+    const pressedByPointer = useRef(false);
 
     const artists = folder.artistsRoot.children;
     const playlists = folder.playlistsRoot.children;
@@ -92,6 +137,22 @@ function MainPanel() {
         }
 
         selectLeaf(child.id);
+    }
+
+    function handleActionPointerDown(event: React.PointerEvent<HTMLButtonElement>, action: () => void) {
+        if (event.button !== 0) return;
+        pressedByPointer.current = true;
+        event.preventDefault();
+        action();
+    }
+
+    function handleActionClick(action: () => void) {
+        if (pressedByPointer.current) {
+            pressedByPointer.current = false;
+            return;
+        }
+
+        action();
     }
 
     function HomeView() {
@@ -186,8 +247,16 @@ function MainPanel() {
                     </div>
                 </section>
                 <div className={styles.actions}>
-                    <button type="button" className={styles.primaryAction} onClick={() => playSelection(currentSelected)}>Play</button>
-                    <button type="button" className={styles.secondaryAction} onClick={() => playSelection(currentSelected, true)}>Shuffle</button>
+                    <button type="button" className={styles.primaryAction}
+                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(currentSelected))}
+                        onClick={() => handleActionClick(() => playSelection(currentSelected))}>Play</button>
+                    <button type="button" className={styles.secondaryAction}
+                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(currentSelected, true))}
+                        onClick={() => handleActionClick(() => playSelection(currentSelected, true))}>Shuffle</button>
+                    <button type="button" 
+                        className={autoplay ? styles.primaryAction : styles.secondaryAction}
+                        onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
+                        onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
                 </div>
                 <TrackTable songs={currentSongs} />
             </>
