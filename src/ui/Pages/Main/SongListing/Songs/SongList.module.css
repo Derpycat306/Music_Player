@@ -14,7 +14,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 5px 6px 5px 10px;
-    background-color: var(--surface);
+    background-color: var(--sidebar);
     border-right: 3px solid #000000;
     border-bottom: 3px solid #000000;
     border-top: 3px solid #3d3d3d;
@@ -44,7 +44,7 @@
 .close:hover,
 .close:focus-visible {
     color: var(--text);
-    background: var(--surface-hover);
+    background: var(--sidebar-hover);
 }
 
 .songs {

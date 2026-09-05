@@ -114,7 +114,65 @@
 }
 
 .card:hover {
-    background: var(--surface-hover);
+    background: var(--sidebar-hover);
+}
+
+.playlistCard {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: rgba(17, 17, 19, 0.62);
+}
+
+.playlistCard:hover {
+    background: var(--sidebar-hover);
+}
+
+.playlistCardSelect {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.playlistCardSelect strong,
+.playlistCardSelect span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlistCardSelect strong {
+    color: #fff;
+}
+
+.playlistCardSelect span {
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.deleteButton {
+    width: 100%;
+    min-height: 30px;
+    margin-top: 12px;
+    border: 1px solid #71617d;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.deleteButton:hover {
+    background: #5b2731;
+    color: #fff;
 }
 
 .card:focus-visible {
@@ -196,6 +254,24 @@
     display: flex;
     gap: 10px;
     padding: 24px 0 18px;
+}
+
+.playlistForm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 520px;
+    margin-bottom: 30px;
+}
+
+.playlistForm input {
+    flex: 1 1 240px;
+    min-height: 36px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    border: 1px solid #71617d;
+    background: var(--sidebar);
+    color: var(--text);
 }
 
 .primaryAction,

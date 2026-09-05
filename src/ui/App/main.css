@@ -18,9 +18,9 @@ text,
 :root {
     --dark: #0c0c0c; 
     --background: #18181b;
-    --sidebar: #070708;
-    --surface-selected: #1b1b1f;
-    --surface-hover: #1c1b20;
+    --sidebar: #111116;
+    --sidebar-selected: #1b1b1f;
+    --sidebar-hover: #1c1b20;
 
     --text: #d1d3d3;
     --text-muted: #a7a7a7;
@@ -46,5 +46,5 @@ text,
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--surface-hover);
+    background-color: var(--sidebar-hover);
 }

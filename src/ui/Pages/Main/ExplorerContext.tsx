@@ -84,6 +84,8 @@ interface ExplorerContextType {
     filter: string
 
     setViewType: (type: ExplorerView) => void
+    openView: () => void
+    openSelection: (id: string) => SongListing[]
     setSelected: (id: string | null) => void
     setFilter: (filter: string) => void
     traverse: (id: string, shuffle?: boolean) => SongListing[]
@@ -235,6 +237,12 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     const [showSelectedDetail, setShowSelectedDetail] = useState(false)
     const [panelSelectionId, setPanelSelectionId] = useState<string | null>(null)
     const [panelParentId, setPanelParentId] = useState<string | null>(null)
+    const [panelHistory, setPanelHistory] = useState<Array<{
+        selectionId: string | null;
+        parentId: string | null;
+        showDetail: boolean;
+        songs: SongListing[];
+    }>>([])
     const [filter, setFilter] = useState("");
 
     useEffect(() => {
@@ -276,7 +284,17 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             return null;
         };
 
-        return (id: string) => find(folder.artistsRoot, id) ?? find(folder.albumsRoot, id) ?? find(folder.playlistsRoot, id);
+        return (id: string) => {
+            const root = id === folder.artistsRoot.id
+                ? folder.artistsRoot
+                : id === folder.albumsRoot.id
+                    ? folder.albumsRoot
+                    : id === folder.playlistsRoot.id
+                        ? folder.playlistsRoot
+                        : null;
+            return root ? { node: root, parent: null } :
+                find(folder.artistsRoot, id) ?? find(folder.albumsRoot, id) ?? find(folder.playlistsRoot, id);
+        };
     }, [folder]);
 
     const panelSelection = panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
@@ -328,17 +346,28 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             .filter((album): album is ExplorerLeaf => album !== undefined);
     }, [folder.artistsRoot, recentAlbumIds]);
 
+    function pushPanelHistory() {
+        setPanelHistory((history) => [...history, {
+            selectionId: panelSelectionId,
+            parentId: panelParentId,
+            showDetail: showSelectedDetail,
+            songs: panelSongs,
+        }]);
+    }
+
     function traverse(id: string, shuffle = false): SongListing[] {
         const target = findNode(id)?.node;
         if (!target) return [];
 
         if (target.kind === "directory") {
+            pushPanelHistory();
             setShowSelectedDetail(false);
             setPanelSelectionId(target.id);
             setPanelParentId(null);
             return [];
         }
 
+        pushPanelHistory();
         return selectLeaf(target.id, shuffle);
     }
 
@@ -388,6 +417,16 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     }
 
     function returnToParent() {
+        const previous = panelHistory.at(-1);
+        if (previous) {
+            setPanelHistory((history) => history.slice(0, -1));
+            setPanelSelectionId(previous.selectionId);
+            setPanelParentId(previous.parentId);
+            setShowSelectedDetail(previous.showDetail);
+            setPanelSongs(previous.songs);
+            return;
+        }
+
         setShowSelectedDetail(false);
         setPanelSelectionId(panelParentId);
         setPanelParentId(null);
@@ -395,6 +434,29 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     function setViewType(view: ExplorerView) {
         setCurrentViewType(view);
+    }
+
+    function openView() {
+        const root = currentViewType === "artists"
+            ? folder.artistsRoot
+            : currentViewType === "albums"
+                ? folder.albumsRoot
+                : folder.playlistsRoot;
+
+            setPanelHistory([{
+                selectionId: null,
+                parentId: null,
+                showDetail: false,
+                songs: [],
+            }]);
+        setPanelSelectionId(root.id);
+        setPanelParentId(null);
+        setShowSelectedDetail(false);
+    }
+
+    function openSelection(id: string) {
+        pushPanelHistory();
+        return selectLeaf(id);
     }
 
     return (
@@ -411,12 +473,14 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     showSelectedDetail,
                     panelSelection,
                     panelChildren,
-                    panelCanReturn: panelParentId !== null || panelSelection?.kind === "directory",
+                    panelCanReturn: panelHistory.length > 0 || panelParentId !== null,
                     recentAlbums,
                     canReturn: false,
                     folder,
                     filter,
                     setViewType,
+                    openView,
+                    openSelection,
                     setSelected,
                     setFilter,
                     traverse,

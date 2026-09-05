@@ -6,18 +6,17 @@ import ListItem from "./ListItem";
 import PlaylistContext from "./LeafContext";
 
 function FileExplorer() {
-    const { addPlaylist, playSong } = usePlayer();
+    const { playSong } = usePlayer();
     const {
         setFilter,
         currentViewType,
         setViewType,
+        openView,
         currentChildren,
         startQueue,
         traverse,
     } = useExplorer()
     const [isThinView, setIsThinView] = useState(() => window.innerWidth <= 700);
-    const [playlistName, setPlaylistName] = useState("");
-    const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
     const [contextMenu, setContextMenu] = useState<{
         id: string;
         name: string;
@@ -45,14 +44,6 @@ function FileExplorer() {
         }
     }
 
-    function createPlaylist() {
-        const name = playlistName.trim();
-        if (!name) return;
-        addPlaylist(name);
-        setPlaylistName("");
-        setIsCreatingPlaylist(false);
-    }
-
     return (
         <div className={styles.module}>
             <div className={styles.control}>
@@ -74,7 +65,14 @@ function FileExplorer() {
                 placeholder={"search"}
                 onChange={(e) => {setFilter(e.target.value.toLowerCase())}}/>
 
-            <div className={styles.name}>{currentViewType[0].toUpperCase() + currentViewType.slice(1)}</div>
+            <button
+                type="button"
+                className={styles.name}
+                aria-label={`Show all ${currentViewType}`}
+                onClick={openView}
+            >
+                {currentViewType[0].toUpperCase() + currentViewType.slice(1)}
+            </button>
 
             <div className={styles.children}>
                 {
@@ -107,29 +105,6 @@ function FileExplorer() {
                     })
                 }
             </div>
-
-            {currentViewType === "playlists" && (
-                <div className={styles.playlistActions}>
-                    {isCreatingPlaylist ? (
-                        <>
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder="Playlist name"
-                                value={playlistName}
-                                onChange={(event) => setPlaylistName(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Enter") createPlaylist();
-                                    if (event.key === "Escape") setIsCreatingPlaylist(false);
-                                }}
-                            />
-                            <button onClick={createPlaylist}>Create Playlist</button>
-                        </>
-                    ) : (
-                        <button onClick={() => setIsCreatingPlaylist(true)}>New Playlist</button>
-                    )}
-                </div>
-            )}
 
             {contextMenu && (
                 <PlaylistContext

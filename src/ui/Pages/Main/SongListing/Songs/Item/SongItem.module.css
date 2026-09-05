@@ -1,5 +1,5 @@
 .item {
-    background-color: var(--surface);
+    background-color: var(--sidebar);
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -14,7 +14,7 @@
 }
 
 .item:hover{
-    background-color: var(--surface-hover);
+    background-color: var(--sidebar-hover);
 }
 
 .icon {

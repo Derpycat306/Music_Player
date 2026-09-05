@@ -7,9 +7,9 @@
     max-height: calc(100vh - 16px);
     padding: 5px;
     overflow: hidden;
-    border: 1px solid var(--surface-hover);
+    border: 1px solid var(--sidebar-hover);
     border-radius: 4px;
-    background: var(--surface);
+    background: var(--sidebar);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -17,7 +17,7 @@
     min-height: 30px;
     padding: 6px 8px;
     border: 0;
-    background: var(--surface);
+    background: var(--sidebar);
     color: var(--text-muted);
     text-align: left;
     cursor: pointer;
@@ -25,7 +25,7 @@
 
 .menu button:hover,
 .menu button:focus-visible {
-    background: var(--surface-hover);
+    background: var(--sidebar-hover);
     color: var(--text);
     outline: none;
 }

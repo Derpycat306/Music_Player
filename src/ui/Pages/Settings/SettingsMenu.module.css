@@ -45,7 +45,7 @@
 
 .main > button {
     min-height: 40px;
-    background-color: var(--surface);
+    background-color: var(--sidebar);
     color: var(--text);
     font-family: Inter, system-ui, sans-serif;
     font-size: 1em;

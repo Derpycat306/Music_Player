@@ -64,7 +64,7 @@
 }
 
 .controlButtons > button {
-    background-color: var(--surface-hover);
+    background-color: var(--sidebar-hover);
     height: 25px;
     width: 25px;
     color: var(--text-muted);
@@ -77,7 +77,7 @@
 }
 
 .controlButtons > .auto {
-    background-color: var(--surface-selected);
+    background-color: var(--sidebar-selected);
     color: white;
     font-weight: bold;
     border-right: 2px solid #656565;

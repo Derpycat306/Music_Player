@@ -1,7 +1,7 @@
 .item {
     position: relative;
     display: flex;
-    background-color: var(--surface);
+    background-color: var(--sidebar);
     align-items: center;
     display: flex;
     flex-direction: row;
@@ -10,7 +10,7 @@
 }
 
 .item:hover {
-    background-color: var(--surface-hover);
+    background-color: var(--sidebar-hover);
 }
 
 .selected {

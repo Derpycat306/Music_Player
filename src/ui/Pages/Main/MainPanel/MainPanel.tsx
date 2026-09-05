@@ -1,5 +1,5 @@
 import styles from "./MainPanel.module.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useExplorer, type ExplorerChild, type ExplorerLeaf } from "../ExplorerContext";
 import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
 
@@ -48,6 +48,40 @@ function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: Exp
             <strong>{child.name}</strong>
             <span>{cardType(child)}</span>
         </button>
+    );
+}
+
+function PlaylistCard({
+    child,
+    onSelect,
+    onDelete,
+}: {
+    child: ExplorerChild;
+    onSelect: (child: ExplorerChild) => void;
+    onDelete: (name: string) => void;
+}) {
+    const art = artworkFor(child);
+
+    return (
+        <div className={styles.playlistCard}>
+            <button type="button" className={styles.playlistCardSelect} onClick={() => onSelect(child)}>
+                <div className={`${styles.cardArt} ${!art ? styles.cardArtEmpty : ""}`}>
+                    {art && <img src={`music:///song?path=${encodeURIComponent(art)}`} alt="" />}
+                    {!art && <span>♫</span>}
+                </div>
+                <strong>{child.name}</strong>
+                <span>Playlist</span>
+            </button>
+            {child.name.toLowerCase() !== "favorites" && (
+                <button
+                    type="button"
+                    className={styles.deleteButton}
+                    onClick={() => onDelete(child.name)}
+                >
+                    Delete
+                </button>
+            )}
+        </div>
     );
 }
 
@@ -116,6 +150,34 @@ function shuffleArray<T>(array: T[]): T[] {
     return result;
 }
 
+function PlaylistForm({ addPlaylist }: { addPlaylist: (name: string) => void }) {
+    const [playlistName, setPlaylistName] = useState("");
+
+    function createPlaylist() {
+        const name = playlistName.trim();
+        if (!name) return;
+        addPlaylist(name);
+        setPlaylistName("");
+    }
+
+    return (
+        <div className={styles.playlistForm}>
+            <input
+                type="text"
+                value={playlistName}
+                placeholder="Playlist name"
+                onChange={(event) => setPlaylistName(event.target.value)}
+                onKeyDown={(event) => {
+                    if (event.key === "Enter") createPlaylist();
+                }}
+            />
+            <button type="button" className={styles.primaryAction} onClick={createPlaylist}>
+                Add Playlist
+            </button>
+        </div>
+    );
+}
+
 function MainPanel() {
     const {
         currentSelectedId,
@@ -126,12 +188,13 @@ function MainPanel() {
         panelChildren,
         panelCanReturn,
         returnToParent,
+        openSelection,
+        selectLeaf,
         folder,
         traverse,
-        selectLeaf,
         startQueue,
     } = useExplorer();
-    const { songs, playSong, autoplay, toggleAutoplay } = usePlayer();
+    const { songs, playSong, addPlaylist, deletePlaylist, autoplay, toggleAutoplay } = usePlayer();
     const pressedByPointer = useRef(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -145,6 +208,12 @@ function MainPanel() {
 
     function goBack() {
         returnToParent();
+    }
+
+    function deletePlaylistFromView(name: string) {
+        if (window.confirm(`Delete playlist "${name}"?`)) {
+            deletePlaylist(name);
+        }
     }
 
     function playSelection(leaf: ExplorerLeaf, shuffle = false) {
@@ -161,7 +230,7 @@ function MainPanel() {
             return;
         }
 
-        selectLeaf(child.id);
+        openSelection(child.id);
     }
 
     function handleActionPointerDown(event: React.PointerEvent<HTMLButtonElement>, action: () => void) {
@@ -231,22 +300,37 @@ function MainPanel() {
     }
 
     function DirectoryView() {
+        const isPlaylistRoot = panelSelection?.id === "playlists-root";
+        const viewName = panelSelection?.name ?? "Library";
+
         return (
             <>
                 <section className={styles.welcome}>
-                    <p className={styles.eyebrow}>Artist</p>
-                    <h1>{panelSelection?.name}</h1>
+                    <p className={styles.eyebrow}>Browse</p>
+                    <h1>{viewName}</h1>
                     <p>{panelChildren.length} {panelChildren.length === 1 ? "release" : "releases"}</p>
                 </section>
 
                 <section className={styles.section}>
+                    {isPlaylistRoot && (
+                        <PlaylistForm addPlaylist={addPlaylist} />
+                    )}
                     <div className={styles.sectionHeading}>
-                        <h2>Albums</h2>
+                        <h2>{viewName}</h2>
                     </div>
-                    {panelChildren.length > 0 ? (
+                    {panelChildren.length > 0 || isPlaylistRoot ? (
                         <div className={styles.cardGrid}>
                             {panelChildren.map((child) => (
-                                <Card key={child.id} child={child} onSelect={selectCard} />
+                                isPlaylistRoot ? (
+                                    <PlaylistCard
+                                        key={child.id}
+                                        child={child}
+                                        onSelect={selectCard}
+                                        onDelete={deletePlaylistFromView}
+                                    />
+                                ) : (
+                                    <Card key={child.id} child={child} onSelect={selectCard} />
+                                )
                             ))}
                         </div>
                     ) : (
@@ -288,6 +372,15 @@ function MainPanel() {
                         className={autoplay ? styles.primaryAction : styles.secondaryAction}
                         onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
                         onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
+                    {isPlaylist && panelSelection.name !== "Favorites" && (
+                        <button
+                            type="button"
+                            className={styles.secondaryAction}
+                            onClick={() => deletePlaylistFromView(panelSelection.name)}
+                        >
+                            Delete Playlist
+                        </button>
+                    )}
                 </div>
                 <TrackTable songs={panelSongs} />
             </>

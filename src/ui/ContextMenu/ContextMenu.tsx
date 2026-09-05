@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PropsWithChildren } from "react";
+import { createPortal } from "react-dom";
 import styles from "./ContextMenu.module.css";
 
 type ContextMenuProps = PropsWithChildren<{
@@ -42,7 +43,7 @@ function ContextMenu({ x, y, onClose, children }: ContextMenuProps) {
         top: position.y,
     };
 
-    return (
+    return createPortal(
         <div
             ref={menuRef}
             className={styles.menu}
@@ -51,7 +52,8 @@ function ContextMenu({ x, y, onClose, children }: ContextMenuProps) {
             onPointerDown={(event) => event.stopPropagation()}
         >
             {children}
-        </div>
+        </div>,
+        document.body,
     );
 }
 
