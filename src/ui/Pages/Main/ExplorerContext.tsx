@@ -66,8 +66,6 @@ function filterDirectory(directory: ExplorerDirectory, filter: string): Explorer
 }
 
 
-const QUEUE_SELECTION_ID = "__queue__";
-
 interface ExplorerContextType {
     currentViewType: ExplorerView
     currentSelectedId: string | null
@@ -88,12 +86,12 @@ interface ExplorerContextType {
     setViewType: (type: ExplorerView) => void
     openView: () => void
     openSelection: (id: string) => SongListing[]
-    openQueue: (songs: SongListing[]) => void
     setSelected: (id: string | null) => void
     setFilter: (filter: string) => void
     traverse: (id: string, shuffle?: boolean) => SongListing[]
     selectLeaf: (id: string, shuffle?: boolean) => SongListing[]
     startQueue: (songs: SongListing[], selectedId?: string) => void
+    openTemporaryPlaylist: (name: string, songs: SongListing[]) => void
     returnToParent: () => void
 }
 
@@ -235,7 +233,6 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     const [currentViewType, setCurrentViewType] = useState<ExplorerView>("artists")
     const [currentSelectedId, setSelected] = useState<string | null>(null)
     const [currentSongs, setCurrentSongs] = useState<SongListing[]>([])
-    const [queueSongs, setQueueSongs] = useState<SongListing[]>([])
     const [panelSongs, setPanelSongs] = useState<SongListing[]>([])
     const [recentAlbumIds, setRecentAlbumIds] = useState<string[]>([])
     const [showSelectedDetail, setShowSelectedDetail] = useState(false)
@@ -301,23 +298,11 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         };
     }, [folder]);
 
-    const panelSelection = panelSelectionId === QUEUE_SELECTION_ID
-        ? { id: QUEUE_SELECTION_ID, name: "Queue", kind: "leaf", art: null, songs: queueSongs } satisfies ExplorerLeaf
-        : panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
+    const panelSelection = panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
     const panelChildren = panelSelection?.kind === "directory" ? panelSelection.children : [];
 
     const currentSelected = useMemo(() => {
         if (!currentSelectedId) return null;
-
-        if (currentSelectedId === QUEUE_SELECTION_ID) {
-            return {
-                id: QUEUE_SELECTION_ID,
-                name: "Queue",
-                kind: "leaf",
-                art: null,
-                songs: queueSongs,
-            } satisfies ExplorerLeaf;
-        }
 
         const findLeaf = (directory: ExplorerDirectory): ExplorerLeaf | null => {
             for (const child of directory.children) {
@@ -335,7 +320,7 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         };
 
         return findLeaf(folder.artistsRoot) ?? findLeaf(folder.playlistsRoot);
-    }, [currentSelectedId, folder.artistsRoot, folder.playlistsRoot, queueSongs]);
+    }, [currentSelectedId, folder.artistsRoot, folder.playlistsRoot]);
 
     const currentSelectedType = useMemo<ExplorerLeafType>(() => {
         if (!currentSelected) return "none";
@@ -422,23 +407,23 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             });
         }
         const songsForView = [...result.leaf.songs];
-        setPanelSongs(songsForView);
-        return _shuffle ? shuffleArray(songsForView) : songsForView;
+        const orderedSongs = _shuffle ? shuffleArray(songsForView) : songsForView;
+        setPanelSongs(orderedSongs);
+        return orderedSongs;
     }
 
     function startQueue(songsForQueue: SongListing[], selectedId?: string) {
         setQueue(songsForQueue);
-        setQueueSongs(songsForQueue);
         setCurrentSongs(songsForQueue);
         if (selectedId) setSelected(selectedId);
     }
 
-    function openQueue(songsForQueue: SongListing[]) {
+    function openTemporaryPlaylist(name: string, songsForQueue: SongListing[]) {
+        const localPlaylistId = `playlist:${name}`;
         setQueue(songsForQueue);
-        setQueueSongs(songsForQueue);
         setCurrentSongs(songsForQueue);
-        setSelected(QUEUE_SELECTION_ID);
-        setPanelSelectionId(QUEUE_SELECTION_ID);
+        setSelected(localPlaylistId);
+        setPanelSelectionId(localPlaylistId);
         setPanelParentId(null);
         setShowSelectedDetail(true);
         setPanelSongs(songsForQueue);
@@ -509,12 +494,12 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     setViewType,
                     openView,
                     openSelection,
-                    openQueue,
                     setSelected,
                     setFilter,
                     traverse,
                     selectLeaf,
                     startQueue,
+                    openTemporaryPlaylist,
                     returnToParent,
                 }
             }>

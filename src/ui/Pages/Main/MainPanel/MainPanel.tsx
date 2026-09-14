@@ -193,8 +193,9 @@ function MainPanel() {
         folder,
         traverse,
         startQueue,
+        openTemporaryPlaylist,
     } = useExplorer();
-    const { songs, playSong, addPlaylist, deletePlaylist, autoplay, toggleAutoplay } = usePlayer();
+    const { songs, playSong, addPlaylist, deletePlaylist, autoplay, toggleAutoplay, createLocalPlaylist, setQueue } = usePlayer();
     const pressedByPointer = useRef(false);
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -217,10 +218,19 @@ function MainPanel() {
     }
 
     function playSelection(leaf: ExplorerLeaf, shuffle = false) {
-        const queue = selectLeaf(leaf.id);
-        const orderedSongs = shuffle ? shuffleArray(queue) : queue;
-        startQueue(orderedSongs, leaf.id);
-        const firstSong = orderedSongs[0];
+        const baseQueue = selectLeaf(leaf.id);
+        const orderedQueue = shuffle ? shuffleArray(baseQueue) : baseQueue;
+
+        const localPlaylistName = "Shuffle";
+        if (shuffle) {
+            createLocalPlaylist(localPlaylistName, orderedQueue);
+            setQueue(orderedQueue);
+            openTemporaryPlaylist(localPlaylistName, orderedQueue);
+        } else {
+            startQueue(orderedQueue, leaf.id);
+        }
+
+        const firstSong = orderedQueue[0];
         if (firstSong) void playSong(firstSong);
     }
 

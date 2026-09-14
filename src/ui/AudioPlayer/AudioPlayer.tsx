@@ -25,6 +25,7 @@ interface PlayerContextType {
     playPrevious: () => void;
     toggleAutoplay: () => void;
     addPlaylist: (name: string, key?: string) => void;
+    createLocalPlaylist: (name: string, songs: SongListing[]) => void;
     deletePlaylist: (name: string) => void;
 }
 
@@ -45,14 +46,15 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [autoplay, setAutoplay] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [playlists, setPlaylists] = useState<Set<Playlist>>(new Set());
+    const [localPlaylists, setLocalPlaylists] = useState<Playlist[]>([]);
     const playlistsWithFavorites = useMemo(() => {
         const favoritePlaylist: Playlist = {
             name: FAVORITES_PLAYLIST_NAME,
             songs: [...favorites],
         };
 
-        return new Set([favoritePlaylist, ...playlists]);
-    }, [favorites, playlists]);
+        return new Set([favoritePlaylist, ...playlists, ...localPlaylists]);
+    }, [favorites, playlists, localPlaylists]);
 
     const volumeRef = useRef(volume);
     const playlistsRef = useRef(playlists);
@@ -283,6 +285,18 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         }
     }
 
+    function createLocalPlaylist(name: string, songs: SongListing[]) {
+        const cleanedName = name.trim();
+        if (!cleanedName) return;
+
+        const normalizedSongs = songs.map((entry) => entry.song.id);
+
+        setLocalPlaylists((current) => {
+            const next = current.filter((playlist) => playlist.name.toLowerCase() !== cleanedName.toLowerCase());
+            return [...next, { name: cleanedName, songs: normalizedSongs }];
+        });
+    }
+
     function addPlaylist(name: string, key?: string) {
         const cleanedName = name.trim();
         if (!cleanedName) return;
@@ -331,6 +345,9 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         setPlaylists((current) => new Set(
             [...current].filter((playlist) => playlist.name.toLowerCase() !== name.toLowerCase()),
         ));
+        setLocalPlaylists((current) => current.filter(
+            (playlist) => playlist.name.toLowerCase() !== name.toLowerCase(),
+        ));
     }
 
     return (
@@ -358,6 +375,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 playPrevious,
                 toggleAutoplay,
                 addPlaylist,
+                createLocalPlaylist,
                 deletePlaylist,
             }}
         >

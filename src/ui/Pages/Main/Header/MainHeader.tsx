@@ -27,8 +27,8 @@ function getSongArt(song: Song, covers: AlbumCover[]): string | null {
 }
 
 function MainHeader() {
-    const { songs, covers, playSong } = usePlayer();
-    const { openQueue, setViewType } = useExplorer();
+    const { songs, covers, playSong, createLocalPlaylist } = usePlayer();
+    const { openTemporaryPlaylist, setViewType } = useExplorer();
     const [menuOpen, setMenuOpen] = useState(false);
     const [shuffleOpen, setShuffleOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -84,8 +84,10 @@ function MainHeader() {
         const selectedSongs = shuffleArray(songs).slice(0, normalizedCount);
         const queue = selectedSongs.map((song) => ({ song, art: getSongArt(song, covers) }));
 
-        setViewType("albums");
-        openQueue(queue);
+        const playlistName = "Shuffle";
+        createLocalPlaylist(playlistName, queue);
+        setViewType("playlists");
+        openTemporaryPlaylist(playlistName, queue);
         if (queue[0]) void playSong(queue[0]);
         closeMenus();
     }
@@ -107,8 +109,10 @@ function MainHeader() {
             }
         }
 
-        setViewType("albums");
-        openQueue(queue);
+        const playlistName = "Shuffle";
+        createLocalPlaylist(playlistName, queue);
+        setViewType("playlists");
+        openTemporaryPlaylist(playlistName, queue);
         if (queue[0]) void playSong(queue[0]);
         closeMenus();
     }
