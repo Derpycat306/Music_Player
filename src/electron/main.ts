@@ -71,6 +71,21 @@ app.on("ready", () => {
     if (isDev()) {
         mainWindow.loadURL("http://localhost:5123");
     } else {
+        mainWindow.webContents.on("devtools-opened", () => {
+            mainWindow.webContents.closeDevTools();
+        });
+
+        mainWindow.webContents.on("before-input-event", (_event, input) => {
+            const isOpenDevToolsShortcut =
+                (input.control || input.meta) &&
+                input.shift &&
+                input.key.toLowerCase() === "i";
+
+            if (!isDev() && (isOpenDevToolsShortcut || input.key === "F12")) {
+                _event.preventDefault();
+            }
+        });
+
         mainWindow.loadFile(
             path.join(app.getAppPath(), "/dist-react/index.html"),
         );

@@ -24,10 +24,170 @@
     flex: 0 0 auto;
 }
 
+.left {
+    position: relative;
+}
+
 .center {
     flex: 1;
     text-align: center;
     min-width: 0;
+}
+
+.optionsButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: white;
+    padding: 0;
+    cursor: pointer;
+}
+
+.optionsButton:hover,
+.optionsButton:focus-visible {
+    outline: none;
+}
+
+.optionsIcon {
+    width: 28px;
+    height: 28px;
+    transition: scale 0.3s ease;
+}
+
+.optionsButton:hover .optionsIcon,
+.optionsButton:focus-visible .optionsIcon {
+    scale: 1.2;
+}
+
+.submenu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0 2px;
+    border-top: 1px solid var(--sidebar-hover);
+}
+
+.modeToggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.modeToggle button {
+    min-height: 28px;
+    border: 1px solid var(--sidebar-hover);
+    border-radius: 4px;
+    background: var(--sidebar);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.modeToggle .modeActive {
+    background: var(--sidebar-selected);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.controlGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.controlGroup label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.countField {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.countInput {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--sidebar-hover);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    color: transparent;
+    caret-color: var(--text);
+    padding: 6px 8px;
+    min-height: 34px;
+    position: relative;
+    z-index: 1;
+}
+
+.countGhost {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    color: var(--text);
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.countTotal {
+    color: var(--text-muted);
+}
+
+.countArrows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.countArrows button {
+    min-width: 20px;
+    min-height: 15px;
+    padding: 0 4px;
+    border: 1px solid var(--sidebar-hover);
+    border-radius: 3px;
+    background: var(--sidebar);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.65rem;
+    line-height: 1;
+}
+
+.countArrows button:hover,
+.countArrows button:focus-visible {
+    background: var(--sidebar-hover);
+    outline: none;
+}
+
+.toggleRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+}
+
+.toggleRow input {
+    accent-color: var(--accent, #9ecbff);
+}
+
+.submitButton {
+    margin-top: 4px;
+    min-height: 32px;
+    border: 1px solid var(--sidebar-hover);
+    border-radius: 4px;
+    background: var(--sidebar-selected);
+    color: var(--text);
+    cursor: pointer;
 }
 
 .settingsLink,
