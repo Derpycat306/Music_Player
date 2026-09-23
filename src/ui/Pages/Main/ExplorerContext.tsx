@@ -418,6 +418,14 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         if (selectedId) setSelected(selectedId);
     }
 
+    function resetToRoot(root: ExplorerDirectory) {
+        setPanelHistory([{ selectionId: null, parentId: null, showDetail: false, songs: [] }]);
+        setPanelSelectionId(root.id);
+        setPanelParentId(null);
+        setShowSelectedDetail(false);
+        setPanelSongs([]);
+    }
+
     function openTemporaryPlaylist(name: string, songsForQueue: SongListing[]) {
         const localPlaylistId = `playlist:${name}`;
         setQueue(songsForQueue);
@@ -433,6 +441,15 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         const previous = panelHistory.at(-1);
         if (previous) {
             setPanelHistory((history) => history.slice(0, -1));
+
+            if (previous.selectionId === null) {
+                setPanelSelectionId(null);
+                setPanelParentId(null);
+                setShowSelectedDetail(false);
+                setPanelSongs([]);
+                return;
+            }
+
             setPanelSelectionId(previous.selectionId);
             setPanelParentId(previous.parentId);
             setShowSelectedDetail(previous.showDetail);
@@ -440,12 +457,21 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             return;
         }
 
+        if (panelParentId !== null) {
+            setShowSelectedDetail(false);
+            setPanelSelectionId(panelParentId);
+            setPanelParentId(null);
+            return;
+        }
+
         setShowSelectedDetail(false);
-        setPanelSelectionId(panelParentId);
+        setPanelSelectionId(null);
         setPanelParentId(null);
+        setPanelSongs([]);
     }
 
     function setViewType(view: ExplorerView) {
+        if (view === currentViewType) return;
         setCurrentViewType(view);
     }
 
@@ -456,15 +482,7 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                 ? folder.albumsRoot
                 : folder.playlistsRoot;
 
-            setPanelHistory([{
-                selectionId: null,
-                parentId: null,
-                showDetail: false,
-                songs: [],
-            }]);
-        setPanelSelectionId(root.id);
-        setPanelParentId(null);
-        setShowSelectedDetail(false);
+        resetToRoot(root);
     }
 
     function openSelection(id: string) {

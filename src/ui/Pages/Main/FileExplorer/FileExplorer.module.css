@@ -1,91 +1,137 @@
 .module {
     height: 100%;
     min-height: 0;
-    background-color: var(--sidebar);
+    background: linear-gradient(180deg, rgba(21, 19, 27, 0.96), rgba(13, 13, 18, 0.96));
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
-.search{
-    width: 100%;
-    background-color: var(--sidebar);
+.search {
+    width: calc(100% - 20px);
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    margin: 0 10px 8px;
+    outline: none;
+    font: inherit;
+    font-size: 0.82rem;
+    min-height: 32px;
+    flex-shrink: 0;
+}
+
+.search::placeholder {
     color: var(--text-muted);
-    padding: 5px;
 }
 
-.control{
-    width: 100%;
+.control {
+    width: calc(100% - 20px);
     display: flex;
+    gap: 6px;
+    padding: 10px 0 6px;
+    margin: 0 10px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    min-width: 0;
 }
 
-.module button{
-    background-color: var(--sidebar);
+.module button {
+    background: transparent;
     min-height: 30px;
     display: flex;
     flex-direction: row;
     color: var(--text-muted);
     font-family: Inter, system-ui, sans-serif;
-    display: flex;
     justify-content: center;
     align-items: center;
-    padding: 0px;
+    padding: 0 8px;
     cursor: pointer;
-    border-right: 3px solid #101010;
-    border-bottom: 3px solid #101010;
-    border-left: 3px solid #3d3d3d;
-    border-top: 3px solid #3d3d3d;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    font-size: 0.72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .module button:hover {
-    background-color: var(--sidebar-hover);
-}
-
-.control > button{
-    flex: 1;
-}
-
-.control > button[aria-pressed="true"]{
-    background-color: var(--sidebar-selected);
+    background: rgba(255, 255, 255, 0.04);
     color: var(--text);
-    font-weight: bold;
 }
 
-.name {
-    align-self: stretch;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-    min-height: 48px;
-    padding: 15px;
-    background-color: var(--sidebar);
-    margin: 0px;
-    border-bottom: 2px solid var(--sidebar-selected);
-    border-top: 0;
-    border-left: 0;
-    border-right: 0;
+.control > button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-muted);
+    line-height: 1;
+}
+
+.control > button[aria-pressed="true"] {
+    background: linear-gradient(180deg, rgba(182, 143, 255, 0.22), rgba(128, 106, 255, 0.12));
+    border-color: rgba(214, 183, 255, 0.38);
     color: var(--text);
-    font-size: 1rem;
     font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.module > .name {
-    flex: 0 0 48px;
-    min-height: 48px;
-    padding: 15px;
-    border-top: 0;
-    border-right: 0;
-    border-left: 0;
-    border-bottom: 2px solid var(--sidebar-selected);
+.sectionHeader {
+    width: calc(100% - 20px);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 10px 8px;
+    padding: 0 2px;
+    min-height: 22px;
+    flex-shrink: 0;
 }
 
-.name:hover {
-    background-color: var(--sidebar-hover);
+.sectionTitle {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sectionAction {
+    flex: 0 0 auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #d8c4ff;
+    font: inherit;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    opacity: 0.9;
+}
+
+.sectionAction:hover,
+.sectionAction:focus-visible {
+    opacity: 1;
+    text-decoration: underline;
+    outline: none;
 }
 
 .children {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 10px 0px;
+    padding: 6px 0 8px;
     display: flex;
     gap: 3px;
     flex-direction: column;
@@ -93,6 +139,7 @@
     font-family: Inter, system-ui, sans-serif;
     user-select: none;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .playlistActions {

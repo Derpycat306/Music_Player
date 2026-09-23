@@ -54,23 +54,27 @@ export function initProtocol() {
             }
 
             const chunkSize = end - start + 1;
-
-            const buffer = Buffer.alloc(chunkSize);
+            const buffer = Buffer.allocUnsafe(chunkSize);
 
             const handle = await fs.promises.open(filePath, "r");
 
+            let bytesRead = 0;
+
             try {
-                await handle.read(buffer, 0, chunkSize, start);
+                const result = await handle.read(buffer, 0, chunkSize, start);
+                bytesRead = result.bytesRead;
             } finally {
                 await handle.close();
             }
 
-            return new Response(buffer, {
+            const actualChunk = buffer.subarray(0, bytesRead);
+
+            return new Response(actualChunk, {
                 status: 206,
                 headers: {
                     "Content-Type": contentType,
-                    "Content-Length": chunkSize.toString(),
-                    "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+                    "Content-Length": bytesRead.toString(),
+                    "Content-Range": `bytes ${start}-${start + bytesRead - 1}/${fileSize}`,
                     "Accept-Ranges": "bytes",
                 },
             });

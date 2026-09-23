@@ -65,14 +65,19 @@ function FileExplorer() {
                 placeholder={"search"}
                 onChange={(e) => {setFilter(e.target.value.toLowerCase())}}/>
 
-            <button
-                type="button"
-                className={styles.name}
-                aria-label={`Show all ${currentViewType}`}
-                onClick={openView}
-            >
-                {currentViewType[0].toUpperCase() + currentViewType.slice(1)}
-            </button>
+            <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>
+                    {currentViewType[0].toUpperCase() + currentViewType.slice(1)}
+                </span>
+                <button
+                    type="button"
+                    className={styles.sectionAction}
+                    aria-label={`Show all ${currentViewType}`}
+                    onClick={openView}
+                >
+                    View all
+                </button>
+            </div>
 
             <div className={styles.children}>
                 {

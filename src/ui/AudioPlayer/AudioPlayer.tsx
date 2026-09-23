@@ -65,10 +65,20 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const queueRef = useRef<SongListing[]>([]);
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
+        const previousSong = currentSongRef.current;
+        const songStillExists = previousSong
+            ? data.songs.some((song) => song.id === previousSong.song.id)
+            : true;
+
         setSongs(data.songs);
         setCovers(data.covers);
-        setCurrentSong(null);
-        audioRef.current?.pause();
+
+        if (!songStillExists && previousSong) {
+            audioRef.current?.pause();
+            setPlaying(false);
+            setCurrentSong(null);
+            setCurrentTime(0);
+        }
     }
 
     useEffect(() => {
@@ -155,9 +165,22 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             void playSong(nextSong);
         };
 
+        const onError = () => {
+            console.error("Audio playback error", {
+                src: audio.src,
+                currentTime: audio.currentTime,
+                duration: audio.duration,
+                networkState: audio.networkState,
+                readyState: audio.readyState,
+                error: audio.error,
+            });
+            setPlaying(false);
+        };
+
         audio.addEventListener("timeupdate", updateTime);
         audio.addEventListener("loadedmetadata", updateDuration);
         audio.addEventListener("ended", ended);
+        audio.addEventListener("error", onError);
         const subscribe = window.electron.subscribe(updateDirectory);
         const saveSubscribe = window.electron.subscribeToSave(async () => {
             window.electron.settings.set({
@@ -173,6 +196,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             audio.removeEventListener("timeupdate", updateTime);
             audio.removeEventListener("loadedmetadata", updateDuration);
             audio.removeEventListener("ended", ended);
+            audio.removeEventListener("error", onError);
             disposed = true;
             subscribe;
             saveSubscribe;
