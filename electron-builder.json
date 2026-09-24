@@ -17,7 +17,8 @@
         {
             "provider": "github",
             "owner": "Derpycat306",
-            "repo": "Music_Player"
+            "repo": "Music_Player",
+            "releaseType": "draft"
         }
     ]
 }
