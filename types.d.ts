@@ -65,4 +65,6 @@ type Settings = {
     volume: number;
     autoplay: boolean;
     recentAlbums: string[];
+    lastQueue: SongListing[];
+    lastSong: SongListing | null;
 };

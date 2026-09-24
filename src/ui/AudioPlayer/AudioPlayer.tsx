@@ -125,6 +125,10 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             )));
             setVolume(settings.volume)
             setAutoplay(settings.autoplay ?? false);
+            if(settings.lastQueue.length > 0){
+                setQueue(settings.lastQueue)
+                playSong(settings.lastSong??settings.lastQueue.at(0)!)
+            }
         }
         init();
 
@@ -186,6 +190,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             window.electron.settings.set({
                 volume: volumeRef.current,
                 autoplay: autoplayRef.current,
+                lastQueue: queueRef.current,
+                lastSong: currentSongRef.current
             });
             window.electron.favorites.set([...favoritesRef.current]);
             window.electron.playlists.set([...playlistsRef.current]);

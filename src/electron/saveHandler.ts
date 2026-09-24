@@ -7,6 +7,8 @@ const DEFAULT_SETTINGS : Settings = {
     volume: 100,
     autoplay: false,
     recentAlbums: [],
+    lastQueue: [],
+    lastSong: null
 }
 
 const dataPath = path.join(app.getPath("userData"), "Saved")
