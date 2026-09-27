@@ -2,7 +2,7 @@ import fs from "fs";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import { parseFile } from "music-metadata";
 import path from "path";
-import { isAudioFile, isImageFile } from "./extentionHandler.js";
+import { isAudioFile, isImageFile, removeExtension } from "./extentionHandler.js";
 import { savedData } from "./saveHandler.js";
 
 let filePath: string | null = null;
@@ -55,9 +55,9 @@ async function parseSong(
 
     return {
         id: fp,
-        title: metadata.common.title ?? path.basename(fp),
-        artist: artist ?? "Unknown Artist",
-        album: album ?? "",
+        title: metadata.common.title ?? removeExtension(path.basename(fp)),
+        artist: artist ?? metadata.common.artist ?? null,
+        album: album ?? metadata.common.album ?? null,
         trackNumber: metadata.common.track.no ?? 0,
         path: fp,
         duration: metadata.format.duration ?? 0,

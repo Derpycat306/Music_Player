@@ -5,6 +5,7 @@ interface PlayerContextType {
     songs: Song[];
     covers: AlbumCover[];
     currentSong: SongListing | null;
+    currentQueue: SongListing[];
     playing: boolean;
     currentTime: number;
     duration: number;
@@ -127,7 +128,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             setAutoplay(settings.autoplay ?? false);
             if(settings.lastQueue.length > 0){
                 setQueue(settings.lastQueue)
-                playSong(settings.lastSong??settings.lastQueue.at(0)!)
+                setSongRef(settings.lastSong??settings.lastQueue.at(0)!)
             }
         }
         init();
@@ -219,7 +220,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         queueRef.current = [...queueRef.current, song];
     }
 
-    async function playSong(song: SongListing) {
+    function setSongRef(song: SongListing) {
         const audio = audioRef.current;
         if (!audio) return;
 
@@ -229,9 +230,11 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             setCurrentSong(song);
             setCurrentTime(0);
         }
+    }
 
-        await audio.play();
-        setPlaying(true);
+    async function playSong(song: SongListing) {
+        setCurrentSong(song);
+        play();
     }
 
     function pause() {
@@ -385,6 +388,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             value={{
                 songs,
                 covers,
+                currentQueue: queueRef.current,
                 currentSong,
                 playing,
                 currentTime,

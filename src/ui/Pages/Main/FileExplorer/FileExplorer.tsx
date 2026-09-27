@@ -34,6 +34,12 @@ function FileExplorer() {
         return () => mediaQuery.removeEventListener("change", updateView);
     }, []);
 
+    useEffect(() => {
+        if (isThinView && currentViewType === "artists") {
+            setViewType("albums")
+        }
+    }, [isThinView])
+
     function selectItem(id: string) {
         const child = currentChildren.find((entry) => entry.id === id);
         const selectedSongs = traverse(id);

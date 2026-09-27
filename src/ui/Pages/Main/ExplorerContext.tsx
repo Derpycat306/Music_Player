@@ -142,7 +142,7 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
         if (singles) {
             children.push({
                 id: `album:${artistName}:singles`,
-                name: "Singles",
+                name: `Singles - ${artistName}`,
                 kind: "leaf",
                 art: null,
                 songs: singles.map((song) => ({ song, art: getAlbumArt(song) })),
@@ -165,7 +165,7 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
             kind: "directory",
             children: [{
                 id: "album:various-artists:singles",
-                name: "Singles",
+                name: "Common",
                 kind: "leaf",
                 art: null,
                 songs: rootSongs.map((song) => ({ song, art: getAlbumArt(song) })),

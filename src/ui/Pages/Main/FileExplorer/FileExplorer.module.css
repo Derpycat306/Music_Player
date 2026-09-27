@@ -165,4 +165,8 @@
     .control > button:first-child {
         display: none;
     }
+
+    .sectionHeader{
+        display: none;
+    }
 }

@@ -1,18 +1,18 @@
-import { useExplorer } from '../../ExplorerContext';
+import { usePlayer } from '../../../../AudioPlayer/AudioPlayer';
 import SongItem from './Item/SongItem';
 import styles from './SongList.module.css'
 
 function SongList () {
-    const {currentSongs, currentSelected} = useExplorer();
+    const {currentQueue, currentSong} = usePlayer();
 
     return (
-        currentSelected && <div className={styles.module}>
+        currentSong && <div className={styles.module}>
             <div className={styles.name}>
-                <span>{currentSelected.name}</span>
+                <span>{currentSong.song.title}</span>
             </div>
             <div className={styles.songs}>
                 {
-                    currentSongs.map(songListing => (
+                    currentQueue.map(songListing => (
                         <SongItem key={songListing.song.id} songListing={songListing} />
                     ))
                 }
