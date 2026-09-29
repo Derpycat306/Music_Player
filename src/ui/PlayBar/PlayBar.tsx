@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { usePlayer } from "../AudioPlayer/AudioPlayer";
+import { usePlayer } from "../AudioPlayer/useAudioPlayer";
 import styles from "./PlayBar.module.css";
 
 import { SoundOff, SoundMin, SoundLow, SoundHigh } from "iconoir-react";

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useExplorer } from "../ExplorerContext";
-import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
+import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import styles from "./FileExplorer.module.css";
 import ListItem from "./ListItem";
 import PlaylistContext from "./LeafContext";
+import { useExplorer } from "../ExplorerContext/UseExplorer";
 
 function FileExplorer() {
     const { playSong } = usePlayer();
@@ -38,7 +38,7 @@ function FileExplorer() {
         if (isThinView && currentViewType === "artists") {
             setViewType("albums")
         }
-    }, [isThinView])
+    }, [isThinView, currentViewType, setViewType])
 
     function selectItem(id: string) {
         const child = currentChildren.find((entry) => entry.id === id);

@@ -14,7 +14,6 @@ export function setFilepath(fp: string | null, save: boolean = true) {
     watcher?.close();
 
     if (fp !== null) {
-        "setting filepath: " + fp;
         watcher = fs.watch(fp, () => {
             readFiles();
         });

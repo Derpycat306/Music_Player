@@ -1,4 +1,4 @@
-import { usePlayer } from '../../../../AudioPlayer/AudioPlayer';
+import { usePlayer } from '../../../../AudioPlayer/useAudioPlayer';
 import SongItem from './Item/SongItem';
 import styles from './SongList.module.css'
 

@@ -1,5 +1,5 @@
-import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
-import { useExplorer } from "../ExplorerContext";
+import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
+import { useExplorer } from "../ExplorerContext/UseExplorer";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
 
 type Props = {

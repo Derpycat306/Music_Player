@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { MoreHoriz, Settings } from "iconoir-react";
-import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
+import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
-import { useExplorer } from "../ExplorerContext";
+import { useExplorer } from "../ExplorerContext/UseExplorer";
 import styles from "./MainHeader.module.css";
 
 function shuffleArray<T>(array: T[]): T[] {

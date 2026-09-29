@@ -1,39 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react"
-import { usePlayer } from "../../AudioPlayer/AudioPlayer";
+import { useEffect, useMemo, useState, type PropsWithChildren } from "react"
+import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
+import { ExplorerContext, type AlbumListing, type ArtistListing, type ExplorerChild, type ExplorerDirectory, type ExplorerLeaf, type ExplorerLeafType, type ExplorerView, type Folder, type PlaylistListing } from "./ExplorerContext";
 
-export type ExplorerView = "artists" | "albums" | "playlists"
-export type ExplorerLeafType = "none" | "album" | "playlist" | "other"
-
-export interface ExplorerNode {
-    id: string;
-    name: string;
-    kind: string;
-    art?: string | null;
-}
-
-export interface ExplorerDirectory extends ExplorerNode{
-    kind: "directory";
-    children: ExplorerChild[];
-}
-
-export interface ExplorerLeaf extends ExplorerNode {
-    kind: "leaf";
-    songs: SongListing[];
-}
-
-export type ExplorerChild = ExplorerDirectory | ExplorerLeaf;
-
-export interface Folder {
-    artistsRoot: ExplorerDirectory;
-    albumsRoot: ExplorerDirectory;
-    playlistsRoot: ExplorerDirectory;
-}
-
-export interface ArtistListing extends ExplorerDirectory {}
-
-export interface AlbumListing extends ExplorerLeaf {}
-
-export interface PlaylistListing extends ExplorerLeaf {}
+/** Type and interface definitions */
 
 function songMatchesFilter(song: Song, filter: string) {
     return song.title.toLowerCase().includes(filter) ||
@@ -65,37 +34,7 @@ function filterDirectory(directory: ExplorerDirectory, filter: string): Explorer
     };
 }
 
-
-interface ExplorerContextType {
-    currentViewType: ExplorerView
-    currentSelectedId: string | null
-    currentSelectedType: ExplorerLeafType
-    currentChildren: ExplorerChild[]
-    currentSelected: ExplorerLeaf | null
-    currentSongs: SongListing[]
-    panelSongs: SongListing[]
-    showSelectedDetail: boolean
-    panelSelection: ExplorerChild | null
-    panelChildren: ExplorerChild[]
-    panelCanReturn: boolean
-    recentAlbums: ExplorerLeaf[]
-    canReturn: boolean
-    folder: Folder
-    filter: string
-
-    setViewType: (type: ExplorerView) => void
-    openView: () => void
-    openSelection: (id: string) => SongListing[]
-    setSelected: (id: string | null) => void
-    setFilter: (filter: string) => void
-    traverse: (id: string, shuffle?: boolean) => SongListing[]
-    selectLeaf: (id: string, shuffle?: boolean) => SongListing[]
-    startQueue: (songs: SongListing[], selectedId?: string) => void
-    openTemporaryPlaylist: (name: string, songs: SongListing[]) => void
-    returnToParent: () => void
-}
-
-export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[], filter: string): Folder {
+function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filter: string): Folder {
     const getAlbumArt = (song: Song) =>
         song.album ? covers.find((cover) => cover.title === song.album)?.coverPath || null : null;
     const rootSongs: Song[] = [];
@@ -225,8 +164,6 @@ export function build(songs: Song[], covers: AlbumCover[], playlists: Playlist[]
         playlistsRoot: filterDirectory(playlistsRoot, filter),
     };
 }
-
-const ExplorerContext = createContext<ExplorerContextType | null>(null)
 
 export function ExplorerProvider({ children }: PropsWithChildren) {
     const { songs, covers, playlists, setQueue } = usePlayer();
@@ -524,14 +461,4 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             {children}
         </ExplorerContext.Provider>
     )
-}
-
-export function useExplorer() {
-    const context = useContext(ExplorerContext)
-
-    if (!context) {
-        throw new Error("ExplorerContext must be used within a provider");
-    }
-
-    return context;
 }

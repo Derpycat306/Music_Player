@@ -1,7 +1,7 @@
 import styles from "./SongItem.module.css";
 import {useState} from "react";
-import { usePlayer } from "../../../../../AudioPlayer/AudioPlayer";
-import { useExplorer } from "../../../ExplorerContext";
+import { usePlayer } from "../../../../../AudioPlayer/useAudioPlayer";
+import { useExplorer } from "../../../ExplorerContext/UseExplorer";
 import SongContext from "./SongContext";
 
 function SongItem(prop: {songListing: SongListing}) {

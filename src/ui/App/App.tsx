@@ -3,7 +3,7 @@ import MainWindow from "../Pages/Main/MainWindow.tsx";
 import SettingsMenu from "../Pages/Settings/SettingsMenu.tsx";
 import styles from "./App.module.css";
 import PlayBar from "../PlayBar/PlayBar.tsx";
-import { ExplorerProvider } from "../Pages/Main/ExplorerContext";
+import { ExplorerProvider } from "../Pages/Main/ExplorerContext/ExplorerProvider.tsx";
 
 function App() {
     return (

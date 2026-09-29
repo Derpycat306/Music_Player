@@ -1,4 +1,4 @@
-import { usePlayer } from "../../AudioPlayer/AudioPlayer";
+import { usePlayer } from "../../AudioPlayer/useAudioPlayer";
 import { XmarkCircle } from "iconoir-react";
 import styles from "./SettingsMenu.module.css";
 import { Link } from "react-router-dom";

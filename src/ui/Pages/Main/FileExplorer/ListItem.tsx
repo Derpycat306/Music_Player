@@ -1,5 +1,5 @@
 import styles from "./ListItem.module.css";
-import { useExplorer } from "../ExplorerContext";
+import { useExplorer } from "../ExplorerContext/UseExplorer";
 
 interface ListItemProps {
     id: string;

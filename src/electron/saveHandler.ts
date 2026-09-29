@@ -37,6 +37,7 @@ class SaveObject<T>{
             )
             this.saveData = JSON.parse(data)
         }catch(e){
+            console.error(e)
             this.saveData = defaultForm
             this.save(this.saveData)
         }

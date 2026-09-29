@@ -1,7 +1,8 @@
 import styles from "./MainPanel.module.css";
 import { useEffect, useRef, useState } from "react";
-import { useExplorer, type ExplorerChild, type ExplorerLeaf } from "../ExplorerContext";
-import { usePlayer } from "../../../AudioPlayer/AudioPlayer";
+import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
+import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
+import { useExplorer } from "../ExplorerContext/UseExplorer";
 
 function artworkFor(child: ExplorerChild): string | null {
     if (child.kind === "leaf") return child.art ?? child.songs[0]?.art ?? null;

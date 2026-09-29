@@ -290,7 +290,6 @@
 
 .primaryAction:hover,
 .secondaryAction:hover {
-    transform: translateY(-1px);
     filter: brightness(1.12);
 }
 
@@ -323,7 +322,6 @@
     border-color: rgba(214, 183, 255, 0.18);
     background: rgba(255, 255, 255, 0.04);
     color: #fff;
-    transform: translateX(1px);
 }
 
 .trackCurrent {

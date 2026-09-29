@@ -25,8 +25,8 @@ interface Window {
         setFolder: (string) => void;
         selectFolder: () => Promise<string | null>;
         subscribe: (
-            callback: (data: { songs: Song[]; covers: AlbumCover[] }) => void,
-        ) => void;
+            callback: (data: { songs: Song[]; covers: AlbumCover[] }) => void
+        ) => () => void;
         getSongList: () => Promise<{songs: Song[], covers: AlbumCover[]}>;
 
         settings: {
@@ -49,11 +49,11 @@ interface Window {
             get: () => Promise<Playlist[]>;
         };
 
-        subscribeToSave: (callback: () => Promise<void>) => void;
+        subscribeToSave: (callback: () => Promise<void>) => () => void;
 
         exportSongs: (songs: Song[]) => Promise<boolean>;
-    };
-};
+    }
+}
 
 type Playlist = {
     name: string;
