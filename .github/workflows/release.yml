@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: windows-latest
@@ -25,7 +29,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish
-        run: npm run release
+      - name: Build release assets
+        run: npm run release:build
+
+      - name: Create or update draft release
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $assets = Get-ChildItem -Path "dist" -File |
+            Where-Object {
+              $_.Name -like "*.exe" -or
+              $_.Name -like "*.blockmap" -or
+              $_.Name -like "latest*.yml"
+            } |
+            ForEach-Object { $_.FullName }
+
+          if (-not $assets) {
+            throw "No installer, blockmap, or update metadata was generated."
+          }
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --draft --verify-tag --generate-notes
+            if ($LASTEXITCODE -ne 0) {
+              throw "Could not create draft release for $tag."
+            }
+          }
+
+          gh release upload $tag @assets --clobber
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not upload release assets for $tag."
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
