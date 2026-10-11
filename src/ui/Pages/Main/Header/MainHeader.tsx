@@ -23,7 +23,18 @@ function clampNumber(value: number, min: number, max: number): number {
 }
 
 function getSongArt(song: Song, covers: AlbumCover[]): string | null {
-    return covers.find((cover) => cover.title === song.album)?.coverPath ?? null;
+    const artist = song.artist;
+    const album = song.album;
+    const albumArt = album
+        ? covers.find((cover) =>
+            cover.id === `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
+        )
+        : undefined;
+    const artistArt = artist
+        ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
+        : undefined;
+    const rootArt = covers.find((cover) => cover.id === "root-art");
+    return albumArt?.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
 }
 
 function MainHeader() {

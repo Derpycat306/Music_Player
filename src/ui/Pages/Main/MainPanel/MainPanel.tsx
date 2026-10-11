@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
+import SongContext from "../SongListing/Songs/Item/SongContext";
 
 function artworkFor(child: ExplorerChild): string | null {
     if (child.kind === "leaf") return child.art ?? child.songs[0]?.art ?? null;
@@ -86,51 +87,160 @@ function PlaylistCard({
     );
 }
 
-function TrackTable({ songs }: { songs: SongListing[] }) {
+function TrackTable({
+    songs,
+    canReorder = false,
+    onReorder,
+    editMode = false,
+    onRemove,
+    onFavorite,
+    isFavorite,
+    onContextFavoriteChange,
+}: {
+    songs: SongListing[];
+    canReorder?: boolean;
+    onReorder?: (songs: SongListing[]) => boolean;
+    editMode?: boolean;
+    onRemove?: (songId: string) => void;
+    onFavorite: (song: Song, isCurrentlyFavorite: boolean) => void;
+    isFavorite: (songId: string) => boolean;
+    onContextFavoriteChange: (song: Song, wasFavorite: boolean) => void;
+}) {
     const { playSong, currentSong } = usePlayer();
     const { startQueue, panelSelection } = useExplorer();
-    const pressedByPointer = useRef(false);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ song: Song; x: number; y: number } | null>(null);
 
     function play(listing: SongListing) {
         startQueue(songs, panelSelection?.id);
         void playSong(listing);
     }
 
-    function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>, listing: SongListing) {
-        if (event.button !== 0) return;
-        pressedByPointer.current = true;
-        event.preventDefault();
-        play(listing);
-    }
+    function swapSongs(sourceIndex: number, targetIndex: number) {
+        if (!canReorder || sourceIndex === targetIndex) return;
 
-    function handleClick(listing: SongListing) {
-        if (pressedByPointer.current) {
-            pressedByPointer.current = false;
-            return;
-        }
-
-        play(listing);
+        const reordered = [...songs];
+        [reordered[sourceIndex], reordered[targetIndex]] = [
+            reordered[targetIndex]!,
+            reordered[sourceIndex]!,
+        ];
+        onReorder?.(reordered);
     }
 
     return (
         <div className={styles.trackTable}>
-            {songs.map((listing, index) => (
-                <button
-                    type="button"
-                    className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""}`}
-                    key={listing.song.id}
-                    onPointerDown={(event) => handlePointerDown(event, listing)}
-                    onClick={() => handleClick(listing)}
-                >
-                    <span className={styles.trackNumber}>{index + 1}</span>
-                    <span className={styles.trackTitle}>
-                        <strong>{listing.song.title}</strong>
-                        <small>{listing.song.artist ?? "Unknown Artist"}</small>
-                    </span>
-                    <span className={styles.trackAlbum}>{listing.song.album ?? "Single"}</span>
-                    <span className={styles.trackDuration}>{formatDuration(listing.song.duration)}</span>
-                </button>
-            ))}
+            {songs.map((listing, index) => {
+                const favorite = isFavorite(listing.song.id);
+                return (
+                    <div
+                        className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""} ${draggedIndex === index ? styles.trackDragging : ""}`}
+                        key={listing.song.id}
+                        onContextMenu={(event) => {
+                            event.preventDefault();
+                            setContextMenu({ song: listing.song, x: event.clientX, y: event.clientY });
+                        }}
+                        onDragOver={(event) => {
+                            if (canReorder && draggedIndex !== null) {
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = "move";
+                            }
+                        }}
+                        onDrop={(event) => {
+                            if (!canReorder) return;
+                            event.preventDefault();
+                            const sourceIndex = Number(event.dataTransfer.getData("text/plain"));
+                            if (Number.isInteger(sourceIndex) && sourceIndex >= 0 && sourceIndex < songs.length) {
+                                swapSongs(sourceIndex, index);
+                            }
+                            setDraggedIndex(null);
+                        }}
+                    >
+                        <span className={styles.trackNumber}>{index + 1}</span>
+                        {canReorder ? (
+                            <button
+                                type="button"
+                                className={styles.trackDragHandle}
+                                draggable
+                                aria-label={`Reorder ${listing.song.title}`}
+                                title="Drag to move"
+                                onDragStart={(event) => {
+                                    setDraggedIndex(index);
+                                    event.dataTransfer.effectAllowed = "move";
+                                    event.dataTransfer.setData("text/plain", String(index));
+                                }}
+                                onDragEnd={() => setDraggedIndex(null)}
+                            >
+                                <span />
+                                <span />
+                                <span />
+                            </button>
+                        ) : (
+                            <span className={styles.trackDragSpacer} />
+                        )}
+                        <button
+                            type="button"
+                            className={styles.trackPlay}
+                            onClick={() => play(listing)}
+                            aria-label={`Play ${listing.song.title}`}
+                        >
+                            <span className={styles.trackTitle}>
+                                <strong>{listing.song.title}</strong>
+                                <small>{listing.song.artist ?? "Unknown Artist"}</small>
+                            </span>
+                            <span className={styles.trackAlbum}>{listing.song.album ?? "Single"}</span>
+                            <span className={styles.trackDuration}>{formatDuration(listing.song.duration)}</span>
+                        </button>
+                        <div className={styles.trackActions}>
+                            {editMode && (
+                                <button
+                                    type="button"
+                                    className={styles.trackRemoveButton}
+                                    aria-label={`Remove ${listing.song.title} from this list`}
+                                    title="Remove from this list"
+                                    onClick={() => onRemove?.(listing.song.id)}
+                                >
+                                    ×
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                className={`${styles.trackAction} ${favorite ? styles.trackActionActive : ""}`}
+                                aria-label={favorite ? `Remove ${listing.song.title} from Favorites` : `Add ${listing.song.title} to Favorites`}
+                                aria-pressed={favorite}
+                                title={favorite ? "Remove from Favorites" : "Add to Favorites"}
+                                onClick={() => onFavorite(listing.song, favorite)}
+                            >
+                                {favorite ? "★" : "☆"}
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.trackMenuButton}
+                                aria-label={`More actions for ${listing.song.title}`}
+                                title="More song actions"
+                                onClick={(event) => {
+                                    const bounds = event.currentTarget.getBoundingClientRect();
+                                    setContextMenu({
+                                        song: listing.song,
+                                        x: bounds.left,
+                                        y: bounds.bottom,
+                                    });
+                                }}
+                            >
+                                ⋯
+                            </button>
+                        </div>
+                    </div>
+                );
+            })}
+            {contextMenu && (
+                <SongContext
+                    song={contextMenu.song}
+                    X={contextMenu.x}
+                    Y={contextMenu.y}
+                    onClose={() => setContextMenu(null)}
+                    onFavoriteChange={onContextFavoriteChange}
+                />
+            )}
         </div>
     );
 }
@@ -194,14 +304,30 @@ function MainPanel() {
         folder,
         traverse,
         startQueue,
+        reorderPlaylist,
+        removePlaylistSong,
         openTemporaryPlaylist,
+        filter,
     } = useExplorer();
-    const { songs, playSong, addPlaylist, deletePlaylist, autoplay, toggleAutoplay, createLocalPlaylist, setQueue } = usePlayer();
+    const {
+        songs,
+        playSong,
+        addPlaylist,
+        deletePlaylist,
+        autoplay,
+        toggleAutoplay,
+        createLocalPlaylist,
+        setQueue,
+        isFavorite,
+        toggleFavorite,
+    } = usePlayer();
     const pressedByPointer = useRef(false);
     const contentRef = useRef<HTMLDivElement>(null);
+    const [editMode, setEditMode] = useState(false);
 
     useEffect(() => {
         contentRef.current?.scrollTo({ top: 0 });
+        setEditMode(false);
     }, [panelSelection?.id, currentSelectedId, showSelectedDetail]);
 
     const artists = folder.artistsRoot.children;
@@ -218,6 +344,17 @@ function MainPanel() {
         }
     }
 
+    function toggleSongFavorite(song: Song, isCurrentlyFavorite: boolean) {
+        toggleFavorite(song.id);
+        removeFavoriteFromOpenList(song, isCurrentlyFavorite);
+    }
+
+    function removeFavoriteFromOpenList(song: Song, wasFavorite: boolean) {
+        if (wasFavorite && panelSelection?.id.toLowerCase() === "playlist:favorites") {
+            reorderPlaylist(panelSongs.filter((listing) => listing.song.id !== song.id));
+        }
+    }
+
     function playSelection(leaf: ExplorerLeaf, shuffle = false) {
         const baseQueue = selectLeaf(leaf.id);
         const orderedQueue = shuffle ? shuffleArray(baseQueue) : baseQueue;
@@ -225,7 +362,7 @@ function MainPanel() {
         const localPlaylistName = "Shuffle";
         if (shuffle) {
             createLocalPlaylist(localPlaylistName, orderedQueue);
-            setQueue(orderedQueue);
+            setQueue(orderedQueue, `playlist:${localPlaylistName}`);
             openTemporaryPlaylist(localPlaylistName, orderedQueue);
         } else {
             startQueue(orderedQueue, leaf.id);
@@ -358,6 +495,7 @@ function MainPanel() {
         if (panelSelection?.kind !== "leaf") return <HomeView />;
         const art = panelSelection.art ?? panelSelection.songs[0]?.art;
         const isPlaylist = panelSelection.id.startsWith("playlist:");
+        const canReorder = isPlaylist && filter.length === 0;
 
         return (
             <>
@@ -383,6 +521,16 @@ function MainPanel() {
                         className={autoplay ? styles.primaryAction : styles.secondaryAction}
                         onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
                         onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
+                    {isPlaylist && (
+                        <button
+                            type="button"
+                            className={editMode ? styles.primaryAction : styles.secondaryAction}
+                            aria-pressed={editMode}
+                            onClick={() => setEditMode((editing) => !editing)}
+                        >
+                            {editMode ? "Done" : "Edit"}
+                        </button>
+                    )}
                     {isPlaylist && panelSelection.name !== "Favorites" && (
                         <button
                             type="button"
@@ -393,7 +541,16 @@ function MainPanel() {
                         </button>
                     )}
                 </div>
-                <TrackTable songs={panelSongs} />
+                <TrackTable
+                    songs={panelSongs}
+                    canReorder={canReorder}
+                    onReorder={reorderPlaylist}
+                    editMode={editMode}
+                    onRemove={removePlaylistSong}
+                    onFavorite={toggleSongFavorite}
+                    isFavorite={isFavorite}
+                    onContextFavoriteChange={removeFavoriteFromOpenList}
+                />
             </>
         );
     }

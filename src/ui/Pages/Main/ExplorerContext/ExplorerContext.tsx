@@ -57,6 +57,8 @@ export interface ExplorerContextType {
     traverse: (id: string, shuffle?: boolean) => SongListing[]
     selectLeaf: (id: string, shuffle?: boolean) => SongListing[]
     startQueue: (songs: SongListing[], selectedId?: string) => void
+    reorderPlaylist: (songs: SongListing[]) => boolean
+    removePlaylistSong: (songId: string) => boolean
     openTemporaryPlaylist: (name: string, songs: SongListing[]) => void
     returnToParent: () => void
 }

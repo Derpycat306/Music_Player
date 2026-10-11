@@ -12,7 +12,7 @@ export interface PlayerContextType {
     autoplay: boolean;
     playlists: Set<Playlist>;
 
-    setQueue: (queue: SongListing[]) => void;
+    setQueue: (queue: SongListing[], sourceId?: string | null) => void;
     queueSong: (song: SongListing) => void;
     playSong: (song: SongListing) => void;
     pause: () => void;
@@ -25,6 +25,8 @@ export interface PlayerContextType {
     playPrevious: () => void;
     toggleAutoplay: () => void;
     addPlaylist: (name: string, key?: string) => void;
+    reorderPlaylist: (name: string, songIds: string[]) => boolean;
+    removePlaylistSong: (name: string, songId: string) => boolean;
     createLocalPlaylist: (name: string, songs: SongListing[]) => void;
     deletePlaylist: (name: string) => void;
 }

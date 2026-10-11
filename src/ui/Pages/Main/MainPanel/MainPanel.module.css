@@ -13,8 +13,30 @@
     z-index: 1;
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     overflow-anchor: none;
+    scrollbar-color: rgba(216, 196, 255, 0.34) transparent;
+    scrollbar-width: thin;
     padding: 34px clamp(20px, 4vw, 56px) 48px;
+}
+
+.content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background-color: rgba(216, 196, 255, 0.32);
+    background-clip: padding-box;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(216, 196, 255, 0.58);
 }
 
 .backButton {
@@ -303,18 +325,141 @@
 
 .track {
     display: grid;
-    grid-template-columns: 32px minmax(150px, 1fr) minmax(120px, 0.7fr) 52px;
+    grid-template-columns: 26px 22px minmax(150px, 1fr) minmax(120px, 0.7fr) 52px auto;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     min-height: 52px;
     padding: 6px 12px;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 3px;
     background: transparent;
     color: var(--text-muted);
     text-align: left;
-    cursor: pointer;
     transition: border-color 0.1s ease, background 0.1s ease, transform 0.1s ease;
+}
+
+.trackDragHandle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    width: 22px;
+    height: 30px;
+    padding: 5px 4px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+}
+
+.trackDragHandle:active {
+    cursor: grabbing;
+}
+
+.trackDragHandle span {
+    display: block;
+    width: 14px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--text-muted);
+}
+
+.trackDragHandle:hover span,
+.trackDragHandle:focus-visible span {
+    background: #fff;
+}
+
+.trackDragSpacer {
+    width: 22px;
+}
+
+.trackPlay {
+    display: grid;
+    grid-column: 3 / 6;
+    grid-template-columns: subgrid;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.trackPlay:hover .trackTitle strong,
+.trackPlay:focus-visible .trackTitle strong {
+    color: #d6b7ff;
+}
+
+.trackActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.trackAction {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.55rem;
+    cursor: pointer;
+}
+
+.trackAction:hover,
+.trackActionActive {
+    color: #d6b7ff;
+}
+
+.trackRemoveButton {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(255, 156, 168, 0.28);
+    border-radius: 50%;
+    background: rgba(91, 39, 49, 0.3);
+    color: #ff9ca8;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.trackRemoveButton:hover,
+.trackRemoveButton:focus-visible {
+    border-color: rgba(255, 156, 168, 0.65);
+    background: #5b2731;
+    color: #fff;
+}
+
+.trackMenuButton {
+    width: 32px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.45rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.trackMenuButton:hover,
+.trackMenuButton:focus-visible {
+    background: var(--sidebar-hover);
+    color: var(--text);
+}
+
+.trackDragging {
+    opacity: 0.45;
 }
 
 .track:hover,
@@ -386,10 +531,20 @@
     }
 
     .track {
-        grid-template-columns: 28px minmax(0, 1fr) 48px;
+        grid-template-columns: 22px 22px minmax(0, 1fr) 48px auto;
     }
 
     .trackAlbum {
         display: none;
     }
+
+    .trackPlay {
+        grid-column: 3 / 5;
+    }
+
+    .trackActions {
+        flex-direction: column;
+        gap: 2px;
+    }
+
 }

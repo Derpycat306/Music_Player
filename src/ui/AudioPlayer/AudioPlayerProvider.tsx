@@ -4,6 +4,10 @@ import { PlayerContext } from "./AudioPlayerContext";
 
 const FAVORITES_PLAYLIST_NAME = "Favorites";
 
+function normalizeSongKey(key: string) {
+    return key.replace(/\\/g, "/").toLowerCase();
+}
+
 export function PlayerProvider({ children }: PropsWithChildren) {
     const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -34,6 +38,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const currentSongRef = useRef(currentSong);
     const autoplayRef = useRef(autoplay);
     const queueRef = useRef<SongListing[]>([]);
+    const queueSourceIdRef = useRef<string | null>(null);
 
     function updateDirectory(data: { songs: Song[]; covers: AlbumCover[] }) {
         const previousSong = currentSongRef.current;
@@ -198,8 +203,11 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
     }, []);
 
-    function setQueue(queue: SongListing[]) {
+    function setQueue(queue: SongListing[], sourceId?: string | null) {
         queueRef.current = [...queue];
+        if (sourceId !== undefined) {
+            queueSourceIdRef.current = sourceId;
+        }
     }
 
     function queueSong(song: SongListing) {
@@ -241,18 +249,49 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         setCurrentVolume(newVolume);
     }
 
-    function isFavorite(key: string): boolean{
-        return favorites.has(key)
+    function isFavorite(key: string): boolean {
+        const normalizedKey = normalizeSongKey(key);
+        const targetSong = songs.find((song) =>
+            normalizedKey === normalizeSongKey(song.id) ||
+            normalizedKey === normalizeSongKey(song.path),
+        );
+        return [...favorites].some((favorite) => {
+            const normalizedFavorite = normalizeSongKey(favorite);
+            if (normalizedFavorite === normalizedKey) return true;
+            if (!targetSong) return false;
+
+            const favoriteSong = songs.find((song) =>
+                normalizedFavorite === normalizeSongKey(song.id) ||
+                normalizedFavorite === normalizeSongKey(song.path),
+            );
+            return favoriteSong?.id === targetSong.id;
+        });
     }
 
     function toggleFavorite(key: string) {
         setFavorites(prev => {
             const next = new Set(prev);
+            const normalizedKey = normalizeSongKey(key);
+            const targetSong = songs.find((song) =>
+                normalizedKey === normalizeSongKey(song.id) ||
+                normalizedKey === normalizeSongKey(song.path),
+            );
+            const existingKey = [...next].find((favorite) => {
+                const normalizedFavorite = normalizeSongKey(favorite);
+                if (normalizedFavorite === normalizedKey) return true;
+                if (!targetSong) return false;
 
-            if(next.has(key)){
-                next.delete(key);
+                const favoriteSong = songs.find((song) =>
+                    normalizedFavorite === normalizeSongKey(song.id) ||
+                    normalizedFavorite === normalizeSongKey(song.path),
+                );
+                return favoriteSong?.id === targetSong.id;
+            });
+
+            if (existingKey !== undefined) {
+                next.delete(existingKey);
             }else{
-                next.add(key);
+                next.add(targetSong?.id ?? key);
             }
 
             return next;
@@ -305,7 +344,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         if (!cleanedName) return;
         if (cleanedName.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) return;
 
-        const normalizedKey = key?.replace(/\\/g, "/").toLowerCase();
+        const normalizedKey = key ? normalizeSongKey(key) : undefined;
 
         setPlaylists(prev => {
             const next = [...prev];
@@ -326,9 +365,20 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 return new Set(next);
             }
 
-            const updatedSongs = existing.songs.some((songId) =>
-                songId.replace(/\\/g, "/").toLowerCase() === normalizedKey,
-            )
+            const targetSong = songs.find((song) =>
+                normalizedKey === normalizeSongKey(song.id) ||
+                normalizedKey === normalizeSongKey(song.path),
+            );
+            const updatedSongs = existing.songs.some((songId) => {
+                if (normalizeSongKey(songId) === normalizedKey) return true;
+                if (!targetSong) return false;
+
+                const savedSong = songs.find((song) =>
+                    normalizeSongKey(songId) === normalizeSongKey(song.id) ||
+                    normalizeSongKey(songId) === normalizeSongKey(song.path),
+                );
+                return savedSong?.id === targetSong.id;
+            })
                 ? existing.songs
                 : [...existing.songs, key];
 
@@ -342,8 +392,143 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         })
     }
 
+    function reorderPlaylist(name: string, songIds: string[]) {
+        if (name.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) {
+            setFavorites((current) => {
+                const orderedIds = new Set(songIds);
+                const keysBySongId = new Map<string, string>();
+                for (const key of current) {
+                    const song = songs.find((entry) =>
+                        normalizeSongKey(key) === normalizeSongKey(entry.id) ||
+                        normalizeSongKey(key) === normalizeSongKey(entry.path),
+                    );
+                    if (song && !keysBySongId.has(song.id)) {
+                        keysBySongId.set(song.id, key);
+                    }
+                }
+                const orderedFavorites = songIds.map((id) => keysBySongId.get(id) ?? id);
+                const remainingFavorites = [...current].filter((key) => {
+                    const song = songs.find((entry) =>
+                        normalizeSongKey(key) === normalizeSongKey(entry.id) ||
+                        normalizeSongKey(key) === normalizeSongKey(entry.path),
+                    );
+                    return !song || !orderedIds.has(song.id);
+                });
+                return new Set([...orderedFavorites, ...remainingFavorites]);
+            });
+            return true;
+        }
+
+        const playlist = [...playlists].find(
+            (entry) => entry.name.toLowerCase() === name.toLowerCase(),
+        );
+
+        if (playlist) {
+            const keysBySongId = new Map<string, string>();
+            for (const key of playlist.songs) {
+                const song = songs.find((entry) =>
+                    normalizeSongKey(key) === normalizeSongKey(entry.id) ||
+                    normalizeSongKey(key) === normalizeSongKey(entry.path),
+                );
+                if (song && !keysBySongId.has(song.id)) {
+                    keysBySongId.set(song.id, key);
+                }
+            }
+
+            const orderedIds = new Set(songIds);
+            const orderedKeys = songIds.map((id) => keysBySongId.get(id) ?? id);
+            const remainingKeys = playlist.songs.filter((key) => {
+                const song = songs.find((entry) =>
+                    normalizeSongKey(key) === normalizeSongKey(entry.id) ||
+                    normalizeSongKey(key) === normalizeSongKey(entry.path),
+                );
+                return !song || !orderedIds.has(song.id);
+            });
+
+            setPlaylists((current) => new Set(
+                [...current].map((entry) => entry.name.toLowerCase() === name.toLowerCase()
+                    ? { ...entry, songs: [...orderedKeys, ...remainingKeys] }
+                    : entry),
+            ));
+            return true;
+        }
+
+        if (!localPlaylists.some((entry) => entry.name.toLowerCase() === name.toLowerCase())) {
+            return false;
+        }
+
+        setLocalPlaylists((current) => current.map((entry) =>
+            entry.name.toLowerCase() === name.toLowerCase()
+                ? { ...entry, songs: songIds }
+                : entry,
+        ));
+        return true;
+    }
+
+    function removePlaylistSong(name: string, songId: string) {
+        if (name.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) {
+            const targetSong = songs.find((song) => song.id === songId);
+            setFavorites((current) => new Set(
+                [...current].filter((key) => {
+                    if (key === songId) return false;
+                    if (!targetSong) return true;
+                    const savedSong = songs.find((song) =>
+                        normalizeSongKey(key) === normalizeSongKey(song.id) ||
+                        normalizeSongKey(key) === normalizeSongKey(song.path),
+                    );
+                    return savedSong?.id !== targetSong.id;
+                }),
+            ));
+            return true;
+        }
+
+        const playlist = [...playlists].find(
+            (entry) => entry.name.toLowerCase() === name.toLowerCase(),
+        );
+        if (playlist) {
+            const targetSong = songs.find((song) => song.id === songId);
+            setPlaylists((current) => new Set(
+                [...current].map((entry) => entry.name.toLowerCase() !== name.toLowerCase()
+                    ? entry
+                    : {
+                        ...entry,
+                        songs: entry.songs.filter((key) => {
+                            if (key === songId) return false;
+                            if (!targetSong) return true;
+                            const savedSong = songs.find((song) =>
+                                normalizeSongKey(key) === normalizeSongKey(song.id) ||
+                                normalizeSongKey(key) === normalizeSongKey(song.path),
+                            );
+                            return savedSong?.id !== targetSong.id;
+                        }),
+                    }),
+            ));
+            return true;
+        }
+
+        if (!localPlaylists.some((entry) => entry.name.toLowerCase() === name.toLowerCase())) {
+            return false;
+        }
+
+        setLocalPlaylists((current) => current.map((entry) =>
+            entry.name.toLowerCase() !== name.toLowerCase()
+                ? entry
+                : { ...entry, songs: entry.songs.filter((id) => id !== songId) },
+        ));
+        return true;
+    }
+
     function deletePlaylist(name: string) {
         if (name.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) return;
+
+        if (queueSourceIdRef.current?.toLowerCase() === `playlist:${name}`.toLowerCase()) {
+            queueRef.current = [];
+            queueSourceIdRef.current = null;
+            audioRef.current?.pause();
+            setPlaying(false);
+            setCurrentSong(null);
+            setCurrentTime(0);
+        }
 
         setPlaylists((current) => new Set(
             [...current].filter((playlist) => playlist.name.toLowerCase() !== name.toLowerCase()),
@@ -379,6 +564,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 playPrevious,
                 toggleAutoplay,
                 addPlaylist,
+                reorderPlaylist,
+                removePlaylistSong,
                 createLocalPlaylist,
                 deletePlaylist,
             }}

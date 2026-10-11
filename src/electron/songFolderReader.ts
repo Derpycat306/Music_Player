@@ -68,11 +68,40 @@ async function scanDirectory(
     depth: number = 0,
     artist?: string,
     album?: string,
+    inheritedArt?: string,
 ): Promise<{ songs: Song[]; covers: AlbumCover[] }> {
     const entries = await fs.promises.readdir(dir, { withFileTypes: true });
 
     const songs: Song[] = [];
     const covers: AlbumCover[] = [];
+    const directoryArt = entries.find((entry) =>
+        entry.isFile() && isImageFile(entry.name),
+    );
+    const effectiveArt = directoryArt
+        ? path.join(dir, directoryArt.name)
+        : inheritedArt;
+
+    if (directoryArt) {
+        if (depth === 0) {
+            covers.push({
+                id: "root-art",
+                title: "",
+                coverPath: path.join(dir, directoryArt.name),
+            });
+        } else if (depth === 1 && artist) {
+            covers.push({
+                id: `artist-art:${encodeURIComponent(artist)}`,
+                title: artist,
+                coverPath: path.join(dir, directoryArt.name),
+            });
+        } else if (depth >= 2 && album) {
+            covers.push({
+                id: `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
+                title: album,
+                coverPath: path.join(dir, directoryArt.name),
+            });
+        }
+    }
 
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
@@ -86,6 +115,7 @@ async function scanDirectory(
                             1,
                             entry.name,
                             album,
+                            effectiveArt,
                         );
                         songs.push(...result.songs);
                         covers.push(...result.covers);
@@ -98,6 +128,7 @@ async function scanDirectory(
                             2,
                             artist,
                             entry.name,
+                            effectiveArt,
                         );
                         songs.push(...result.songs);
                         covers.push(...result.covers);
@@ -111,6 +142,7 @@ async function scanDirectory(
                             depth + 1,
                             artist,
                             album,
+                            effectiveArt,
                         );
                         songs.push(...result.songs);
                         covers.push(...result.covers);
@@ -118,10 +150,6 @@ async function scanDirectory(
             }
         } else if (isAudioFile(entry.name)) {
             songs.push(await parseSong(fullPath, artist, album));
-        } else if (isImageFile(entry.name)) {
-            if (album && !covers.find((a) => a.title === album)) {
-                covers.push({ id: album, title: album, coverPath: fullPath });
-            }
         }
     }
 

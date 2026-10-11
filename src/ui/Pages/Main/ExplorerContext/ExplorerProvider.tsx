@@ -35,8 +35,25 @@ function filterDirectory(directory: ExplorerDirectory, filter: string): Explorer
 }
 
 function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filter: string): Folder {
-    const getAlbumArt = (song: Song) =>
-        song.album ? covers.find((cover) => cover.title === song.album)?.coverPath || null : null;
+    const getAlbumArt = (song: Song) => {
+        const artist = song.artist;
+        const album = song.album;
+        const albumArt = album
+            ? covers.find((cover) =>
+                cover.id === `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
+            )
+            : undefined;
+        const artistArt = artist
+            ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
+            : undefined;
+        const rootArt = covers.find((cover) => cover.id === "root-art");
+        return albumArt?.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
+    };
+    const getArtistArt = (artist: string) =>
+        covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)?.coverPath ??
+        covers.find((cover) => cover.id === "root-art")?.coverPath ??
+        null;
+    const normalizeSongKey = (key: string) => key.replace(/\\/g, "/").toLowerCase();
     const rootSongs: Song[] = [];
     const artistSongs = new Map<string, Song[]>();
     const artistAlbums = new Map<string, Map<string, Song[]>>();
@@ -94,7 +111,13 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
             return Number(leftIsSingles) - Number(rightIsSingles);
         });
 
-        return { id: `artist:${artistName}`, name: artistName, kind: "directory", children };
+        return {
+            id: `artist:${artistName}`,
+            name: artistName,
+            kind: "directory",
+            art: getArtistArt(artistName),
+            children,
+        };
     });
 
     if (rootSongs.length > 0) {
@@ -102,6 +125,7 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
             id: "artist:various-artists",
             name: "Various Artists",
             kind: "directory",
+            art: covers.find((cover) => cover.id === "root-art")?.coverPath ?? null,
             children: [{
                 id: "album:various-artists:singles",
                 name: "Common",
@@ -119,16 +143,18 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
     });
 
     const playlistListings: PlaylistListing[] = playlists.map((playlist) => {
-        const playlistSongs = songs.filter((song) => playlist.songs.some((savedSong) => {
-            const normalize = (value: string) => value.replace(/\\/g, "/").toLowerCase();
-            const saved = normalize(savedSong);
-            return saved === normalize(song.id) || saved === normalize(song.path);
-        }));
+        const playlistSongs = playlist.songs.flatMap((savedSong) => {
+            const saved = normalizeSongKey(savedSong);
+            const song = songs.find((entry) =>
+                saved === normalizeSongKey(entry.id) || saved === normalizeSongKey(entry.path),
+            );
+            return song ? [{ song, art: getAlbumArt(song) }] : [];
+        });
 
         return {
             id: `playlist:${playlist.name}`,
             name: playlist.name,
-            songs: playlistSongs.map((song) => ({ song, art: getAlbumArt(song) })),
+            songs: playlistSongs,
             kind: "leaf",
         };
     });
@@ -166,7 +192,14 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
 }
 
 export function ExplorerProvider({ children }: PropsWithChildren) {
-    const { songs, covers, playlists, setQueue } = usePlayer();
+    const {
+        songs,
+        covers,
+        playlists,
+        setQueue,
+        reorderPlaylist: savePlaylistOrder,
+        removePlaylistSong: removeSavedPlaylistSong,
+    } = usePlayer();
     const [currentViewType, setCurrentViewType] = useState<ExplorerView>("artists")
     const [currentSelectedId, setSelected] = useState<string | null>(null)
     const [currentSongs, setCurrentSongs] = useState<SongListing[]>([])
@@ -350,9 +383,32 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     }
 
     function startQueue(songsForQueue: SongListing[], selectedId?: string) {
-        setQueue(songsForQueue);
+        setQueue(songsForQueue, selectedId ?? null);
         setCurrentSongs(songsForQueue);
         if (selectedId) setSelected(selectedId);
+    }
+
+    function reorderPlaylist(songsInOrder: SongListing[]) {
+        if (!panelSelectionId?.startsWith("playlist:")) return false;
+
+        const name = panelSelectionId.slice("playlist:".length);
+        if (!savePlaylistOrder(name, songsInOrder.map(({ song }) => song.id))) return false;
+
+        setPanelSongs(songsInOrder);
+        setQueue(songsInOrder, panelSelectionId);
+        return true;
+    }
+
+    function removePlaylistSong(songId: string) {
+        if (!panelSelectionId?.startsWith("playlist:")) return false;
+
+        const name = panelSelectionId.slice("playlist:".length);
+        if (!removeSavedPlaylistSong(name, songId)) return false;
+
+        const nextSongs = panelSongs.filter((listing) => listing.song.id !== songId);
+        setPanelSongs(nextSongs);
+        setQueue(nextSongs, panelSelectionId);
+        return true;
     }
 
     function resetToRoot(root: ExplorerDirectory) {
@@ -365,7 +421,7 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     function openTemporaryPlaylist(name: string, songsForQueue: SongListing[]) {
         const localPlaylistId = `playlist:${name}`;
-        setQueue(songsForQueue);
+        setQueue(songsForQueue, localPlaylistId);
         setCurrentSongs(songsForQueue);
         setSelected(localPlaylistId);
         setPanelSelectionId(localPlaylistId);
@@ -454,6 +510,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     traverse,
                     selectLeaf,
                     startQueue,
+                    reorderPlaylist,
+                    removePlaylistSong,
                     openTemporaryPlaylist,
                     returnToParent,
                 }
