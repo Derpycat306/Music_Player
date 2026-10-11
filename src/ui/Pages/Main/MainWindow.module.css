@@ -9,6 +9,37 @@
     flex-direction: column;
 }
 
+.updateNotice {
+    z-index: 3;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(214, 183, 255, 0.24);
+    background: linear-gradient(90deg, rgba(91, 59, 121, 0.3), rgba(28, 37, 62, 0.3));
+    color: var(--text);
+    font-size: 0.85rem;
+}
+
+.updateNotice button {
+    flex: 0 0 auto;
+    padding: 7px 12px;
+    border: 1px solid rgba(214, 183, 255, 0.5);
+    border-radius: 16px;
+    background: rgba(214, 183, 255, 0.12);
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+}
+
+.updateNotice button:hover,
+.updateNotice button:focus-visible {
+    background: rgba(214, 183, 255, 0.24);
+    outline: none;
+}
+
 .main {
     flex: 1;
     min-height: 0;
@@ -84,6 +115,12 @@
 }
 
 @media (max-width: 700px) {
+    .updateNotice {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
     .main {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
         grid-template-areas: "explorer songs";

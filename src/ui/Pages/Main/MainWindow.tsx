@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import FileExplorer from "./FileExplorer/FileExplorer";
 import styles from "./MainWindow.module.css";
 import MainHeader from "./Header/MainHeader";
@@ -14,6 +14,31 @@ function MainWindow() {
     const [songListWidth, setSongListWidth] = useState(200);
     const [isResizing, setIsResizing] = useState(false);
     const [widthsLoaded, setWidthsLoaded] = useState(false);
+    const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+    const [updateError, setUpdateError] = useState<string | null>(null);
+    const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
+
+    const checkForUpdates = useCallback(async () => {
+        try {
+            const update = await window.electron.updates.check();
+            if (update.available && update.version) {
+                setAvailableVersion(update.version);
+                setUpdateError(null);
+            }
+        } catch (error) {
+            console.error("Unable to check for updates:", error);
+            setUpdateError("Unable to check for updates.");
+        }
+    }, []);
+
+    useEffect(() => {
+        void checkForUpdates();
+        const interval = window.setInterval(() => {
+            void checkForUpdates();
+        }, 60 * 60 * 1000);
+
+        return () => window.clearInterval(interval);
+    }, [checkForUpdates]);
 
     useEffect(() => {
         let active = true;
@@ -96,9 +121,41 @@ function MainWindow() {
         }
     }
 
+    async function installUpdate() {
+        setIsInstallingUpdate(true);
+        setUpdateError(null);
+        try {
+            await window.electron.updates.install();
+        } catch (error) {
+            console.error("Unable to install update:", error);
+            setUpdateError("Update installation failed. Try again.");
+            setIsInstallingUpdate(false);
+        }
+    }
+
     return (
         <div className={styles.body}>
             <MainHeader />
+            {(availableVersion || updateError) && (
+                <div className={styles.updateNotice} role="status">
+                    <span>
+                        {availableVersion
+                            ? `Version ${availableVersion} is available.`
+                            : updateError}
+                        {isInstallingUpdate && " Downloading and installing..."}
+                    </span>
+                    {availableVersion && !isInstallingUpdate && (
+                        <button type="button" onClick={() => void installUpdate()}>
+                            {updateError ? "Retry update" : "Update now"}
+                        </button>
+                    )}
+                    {!availableVersion && updateError && (
+                        <button type="button" onClick={() => void checkForUpdates()}>
+                            Retry check
+                        </button>
+                    )}
+                </div>
+            )}
             <div
                 ref={mainRef}
                 className={`${styles.main} ${isResizing ? styles.resizing : ""}`}
