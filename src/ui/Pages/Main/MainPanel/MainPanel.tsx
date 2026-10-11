@@ -1,5 +1,5 @@
 import styles from "./MainPanel.module.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
@@ -108,51 +108,114 @@ function TrackTable({
 }) {
     const { playSong, currentSong } = usePlayer();
     const { startQueue, panelSelection } = useExplorer();
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [draggedSongId, setDraggedSongId] = useState<string | null>(null);
+    const [previewSongs, setPreviewSongs] = useState<SongListing[] | null>(null);
     const [contextMenu, setContextMenu] = useState<{ song: Song; x: number; y: number } | null>(null);
+    const previewSongsRef = useRef<SongListing[] | null>(null);
+    const dragStartSongsRef = useRef<SongListing[] | null>(null);
+    const previousPositionsRef = useRef<Map<string, number> | null>(null);
+    const trackElementsRef = useRef(new Map<string, HTMLDivElement>());
+    const visibleSongs = previewSongs ?? songs;
 
     function play(listing: SongListing) {
         startQueue(songs, panelSelection?.id);
         void playSong(listing);
     }
 
-    function swapSongs(sourceIndex: number, targetIndex: number) {
-        if (!canReorder || sourceIndex === targetIndex) return;
+    useLayoutEffect(() => {
+        const previousPositions = previousPositionsRef.current;
+        if (!previousPositions) return;
 
-        const reordered = [...songs];
-        [reordered[sourceIndex], reordered[targetIndex]] = [
-            reordered[targetIndex]!,
-            reordered[sourceIndex]!,
-        ];
-        onReorder?.(reordered);
+        for (const [songId, element] of trackElementsRef.current) {
+            const previousTop = previousPositions.get(songId);
+            if (previousTop === undefined) continue;
+
+            const offset = previousTop - element.getBoundingClientRect().top;
+            if (offset) {
+                element.animate(
+                    [{ transform: `translateY(${offset}px)` }, { transform: "translateY(0)" }],
+                    { duration: 180, easing: "ease-out" },
+                );
+            }
+        }
+
+        previousPositionsRef.current = null;
+    }, [previewSongs]);
+
+    function previewDrop(targetSongId: string, event: React.DragEvent<HTMLDivElement>) {
+        if (!canReorder || !draggedSongId) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+
+        const currentSongs = previewSongsRef.current ?? songs;
+        const sourceIndex = currentSongs.findIndex(({ song }) => song.id === draggedSongId);
+        const targetIndex = currentSongs.findIndex(({ song }) => song.id === targetSongId);
+        if (sourceIndex < 0 || targetIndex < 0) return;
+
+        const targetBounds = event.currentTarget.getBoundingClientRect();
+        const insertAfterTarget = event.clientY >= targetBounds.top + targetBounds.height / 2;
+        let destinationIndex = targetIndex + (insertAfterTarget ? 1 : 0);
+        if (sourceIndex < destinationIndex) destinationIndex--;
+        destinationIndex = Math.max(0, Math.min(destinationIndex, currentSongs.length - 1));
+        if (destinationIndex === sourceIndex) return;
+
+        const reordered = [...currentSongs];
+        const [movingSong] = reordered.splice(sourceIndex, 1);
+        if (!movingSong) return;
+        reordered.splice(destinationIndex, 0, movingSong);
+
+        previousPositionsRef.current = new Map(
+            [...trackElementsRef.current].map(([songId, element]) => [
+                songId,
+                element.getBoundingClientRect().top,
+            ]),
+        );
+        previewSongsRef.current = reordered;
+        setPreviewSongs(reordered);
+    }
+
+    function finishReorder() {
+        const initialSongs = dragStartSongsRef.current;
+        const reorderedSongs = previewSongsRef.current;
+        if (
+            initialSongs &&
+            reorderedSongs &&
+            initialSongs.some((listing, index) => listing.song.id !== reorderedSongs[index]?.song.id)
+        ) {
+            onReorder?.(reorderedSongs);
+        }
+
+        dragStartSongsRef.current = null;
+        previewSongsRef.current = null;
+        previousPositionsRef.current = null;
+        setDraggedSongId(null);
+        setPreviewSongs(null);
     }
 
     return (
         <div className={styles.trackTable}>
-            {songs.map((listing, index) => {
+            {visibleSongs.map((listing, index) => {
                 const favorite = isFavorite(listing.song.id);
                 return (
                     <div
-                        className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""} ${draggedIndex === index ? styles.trackDragging : ""}`}
+                        ref={(element) => {
+                            if (element) {
+                                trackElementsRef.current.set(listing.song.id, element);
+                            } else {
+                                trackElementsRef.current.delete(listing.song.id);
+                            }
+                        }}
+                        className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""} ${draggedSongId === listing.song.id ? styles.trackDragging : ""}`}
                         key={listing.song.id}
                         onContextMenu={(event) => {
                             event.preventDefault();
                             setContextMenu({ song: listing.song, x: event.clientX, y: event.clientY });
                         }}
-                        onDragOver={(event) => {
-                            if (canReorder && draggedIndex !== null) {
-                                event.preventDefault();
-                                event.dataTransfer.dropEffect = "move";
-                            }
-                        }}
+                        onDragOver={(event) => previewDrop(listing.song.id, event)}
                         onDrop={(event) => {
                             if (!canReorder) return;
                             event.preventDefault();
-                            const sourceIndex = Number(event.dataTransfer.getData("text/plain"));
-                            if (Number.isInteger(sourceIndex) && sourceIndex >= 0 && sourceIndex < songs.length) {
-                                swapSongs(sourceIndex, index);
-                            }
-                            setDraggedIndex(null);
+                            finishReorder();
                         }}
                     >
                         <span className={styles.trackNumber}>{index + 1}</span>
@@ -164,11 +227,16 @@ function TrackTable({
                                 aria-label={`Reorder ${listing.song.title}`}
                                 title="Drag to move"
                                 onDragStart={(event) => {
-                                    setDraggedIndex(index);
+                                    dragStartSongsRef.current = [...songs];
+                                    previewSongsRef.current = [...songs];
+                                    setPreviewSongs([...songs]);
+                                    setDraggedSongId(listing.song.id);
                                     event.dataTransfer.effectAllowed = "move";
-                                    event.dataTransfer.setData("text/plain", String(index));
+                                    event.dataTransfer.setData("text/plain", listing.song.id);
                                 }}
-                                onDragEnd={() => setDraggedIndex(null)}
+                                onDragEnd={() => {
+                                    if (dragStartSongsRef.current) finishReorder();
+                                }}
                             >
                                 <span />
                                 <span />

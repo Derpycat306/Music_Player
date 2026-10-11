@@ -8,7 +8,9 @@ const DEFAULT_SETTINGS : Settings = {
     autoplay: false,
     recentAlbums: [],
     lastQueue: [],
-    lastSong: null
+    lastSong: null,
+    explorerWidth: 200,
+    songListWidth: 200,
 }
 
 const dataPath = path.join(app.getPath("userData"), "Saved")

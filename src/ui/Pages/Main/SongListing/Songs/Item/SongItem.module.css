@@ -6,9 +6,9 @@
     min-width: 0;
     min-height: 58px;
     margin: 0;
-    padding: 4px 8px;
+    padding: 4px 12px;
     border: 0;
-    border-radius: 4px;
+    border-radius: 0;
     background: transparent;
     color: var(--text-muted);
     transition: background 0.12s ease, color 0.12s ease;
@@ -60,6 +60,8 @@
 }
 
 .title {
+    position: relative;
+    display: block;
     min-width: 0;
     overflow: hidden;
     color: var(--text);
@@ -67,6 +69,44 @@
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.titleMeasure {
+    position: absolute;
+    width: max-content;
+    visibility: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.titleTrack {
+    display: flex;
+    width: max-content;
+    gap: 24px;
+}
+
+.titleTrack > span {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.titleScrollable .titleTrack > span {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.item:hover .titleScrollable .titleTrack {
+    animation: titleMarquee 10s linear infinite;
+}
+
+@keyframes titleMarquee {
+    to {
+        transform: translateX(calc(-50% - 12px));
+    }
 }
 
 .artist {

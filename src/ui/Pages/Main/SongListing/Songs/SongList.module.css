@@ -11,19 +11,20 @@
 .name {
     display: flex;
     align-items: center;
-    flex: 0 0 auto;
-    gap: 12px;
-    min-height: 94px;
-    padding: 16px 14px;
+    box-sizing: border-box;
+    flex: 0 0 132px;
+    height: 132px;
+    gap: 16px;
+    padding: 18px 16px;
     background: linear-gradient(135deg, rgba(91, 59, 121, 0.52), rgba(28, 37, 62, 0.26));
 }
 
 .currentArt {
     display: grid;
-    flex: 0 0 58px;
+    flex: 0 0 76px;
     place-items: center;
-    width: 58px;
-    height: 58px;
+    width: 76px;
+    height: 76px;
     overflow: hidden;
     border-radius: 5px;
     background: linear-gradient(135deg, #5b3b79, #1c253e);
@@ -40,7 +41,7 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     min-width: 0;
 }
 
@@ -53,10 +54,54 @@
 }
 
 .currentTitle {
+    position: relative;
+    display: flex;
+    width: 100%;
+    overflow: hidden;
     color: #fff;
     font-size: 0.88rem;
     line-height: 1.25;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+}
+
+.currentTitleMeasure {
+    position: absolute;
+    width: max-content;
+    visibility: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.currentTitleTrack {
+    display: flex;
+    flex: 0 0 auto;
+    width: max-content;
+    gap: 24px;
+}
+
+.currentTitleText {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.currentTitleScrollable .currentTitleText {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.name:hover .currentTitleScrollable .currentTitleTrack,
+.name:focus-within .currentTitleScrollable .currentTitleTrack {
+    animation: titleMarquee 10s linear infinite;
+}
+
+@keyframes titleMarquee {
+    to {
+        transform: translateX(calc(-50% - 12px));
+    }
 }
 
 .currentArtist {
@@ -88,10 +133,31 @@
 
 .songs {
     min-height: 0;
-    padding: 2px 8px 8px;
+    padding: 14px 0 8px;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    gap: 0;
+    gap: 6px;
+    scrollbar-color: rgba(216, 196, 255, 0.34) transparent;
+    scrollbar-width: thin;
+}
+
+.songs::-webkit-scrollbar {
+    width: 8px;
+}
+
+.songs::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.songs::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background-color: rgba(216, 196, 255, 0.32);
+    background-clip: padding-box;
+}
+
+.songs::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(216, 196, 255, 0.58);
 }

@@ -34,9 +34,52 @@
 }
 
 .name {
+    position: relative;
     flex: 1;
+    display: block;
     text-align: center;
     min-width: 0;
     font-size: 12px;
     margin: 15px 5px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.nameMeasure {
+    position: absolute;
+    width: max-content;
+    visibility: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.nameTrack {
+    display: flex;
+    width: max-content;
+    margin: 0 auto;
+    gap: 24px;
+}
+
+.nameText {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nameScrollable .nameText {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.item:hover .nameScrollable .nameTrack {
+    animation: nameMarquee 10s linear infinite;
+}
+
+@keyframes nameMarquee {
+    to {
+        transform: translateX(calc(-50% - 12px));
+    }
 }

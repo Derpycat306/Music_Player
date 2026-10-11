@@ -12,35 +12,81 @@
 .main {
     flex: 1;
     min-height: 0;
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-areas: "explorer explorer-resize panel songs-resize songs";
     overflow: hidden;
 }
 
-.main > :first-child {
-    flex: 0 0 200px;
-    width: 200px;
-}
-
-.main > :nth-child(2) {
-    flex: 1 1 auto;
+.explorer,
+.panel,
+.songList {
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
-.main > :nth-child(3) {
-    flex: 0 0 200px;
-    width: 200px;
+.explorer {
+    grid-area: explorer;
+}
+
+.panel {
+    grid-area: panel;
+}
+
+.songList {
+    grid-area: songs;
+}
+
+.resizeHandle {
+    position: relative;
+    z-index: 2;
+    grid-row: 1;
+    width: 8px;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.resizeExplorer {
+    grid-column: 2;
+}
+
+.resizeSongs {
+    grid-column: 4;
+}
+
+.resizeHandle::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: transparent;
+    content: "";
+}
+
+.resizeHandle:hover::after,
+.resizeHandle:focus-visible::after {
+    background: rgba(216, 196, 255, 0.48);
+}
+
+.resizeHandle:focus-visible {
+    outline: none;
+}
+
+.resizing,
+.resizing * {
+    cursor: col-resize !important;
+    user-select: none;
 }
 
 @media (max-width: 700px) {
-    .main > :nth-child(2) {
-        display: none;
+    .main {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        grid-template-areas: "explorer songs";
     }
 
-    .main > :first-child,
-    .main > :nth-child(3) {
-        flex: 1 1 50%;
-        width: 50%;
-        min-width: 0;
+    .panel,
+    .resizeHandle {
+        display: none;
     }
 }

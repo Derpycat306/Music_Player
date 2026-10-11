@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 import { PlayerContext } from "./AudioPlayerContext";
 
@@ -34,7 +34,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const volumeRef = useRef(volume);
     const playlistsRef = useRef(playlists);
     const favoritesRef = useRef(favorites);
-    const songsRef = useRef(songs);
     const currentSongRef = useRef(currentSong);
     const autoplayRef = useRef(autoplay);
     const queueRef = useRef<SongListing[]>([]);
@@ -70,10 +69,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     }, [favorites]);
 
     useEffect(() => {
-        songsRef.current = songs;
-    }, [songs]);
-    
-    useEffect(() => {
         currentSongRef.current = currentSong;
     }, [currentSong]);
     
@@ -81,22 +76,27 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         autoplayRef.current = autoplay;
     }, [autoplay]);
     
-    const setSongRef = (song: SongListing) => {
+    const play = useCallback(() => {
+        audioRef.current?.play();
+        setPlaying(true);
+    }, []);
+
+    const setSongRef = useCallback((song: SongListing) => {
         const audio = audioRef.current;
         if (!audio) return;
 
-        if (!currentSong || currentSong.song.id !== song.song.id) {
+        if (currentSongRef.current?.song.id !== song.song.id) {
             audio.src = `music:///song?path=${encodeURIComponent(song.song.path)}`;
-
+            currentSongRef.current = song;
             setCurrentSong(song);
             setCurrentTime(0);
         }
-    }
+    }, []);
 
-    const playSong = (song: SongListing) => {
+    const playSong = useCallback((song: SongListing) => {
         setSongRef(song);
         play();
-    }
+    }, [play, setSongRef]);
     
     useEffect(() => {
         const audio = audioRef.current;
@@ -201,7 +201,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             saveSubscribe();
         };
 
-    }, []);
+    }, [playSong, setSongRef]);
 
     function setQueue(queue: SongListing[], sourceId?: string | null) {
         queueRef.current = [...queue];
@@ -218,11 +218,6 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     function pause() {
         audioRef.current?.pause();
         setPlaying(false);
-    }
-
-    function play() {
-        audioRef.current?.play();
-        setPlaying(true);
     }
 
     function seek(time: number) {

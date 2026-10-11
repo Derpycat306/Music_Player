@@ -67,4 +67,6 @@ type Settings = {
     recentAlbums: string[];
     lastQueue: SongListing[];
     lastSong: SongListing | null;
+    explorerWidth?: number;
+    songListWidth?: number;
 };

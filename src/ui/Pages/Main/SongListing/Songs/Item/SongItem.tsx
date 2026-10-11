@@ -1,13 +1,32 @@
 import styles from "./SongItem.module.css";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../../../../../AudioPlayer/useAudioPlayer";
 import SongContext from "./SongContext";
 
 function SongItem(prop: {songListing: SongListing}) {
     const { playSong, currentSong } = usePlayer();
     const [contextMenu, setContextMenu] = useState<{X: number, Y: number} | null>(null);
+    const titleRef = useRef<HTMLSpanElement>(null);
+    const titleMeasureRef = useRef<HTMLSpanElement>(null);
+    const [isTitleScrollable, setIsTitleScrollable] = useState(false);
     const song = prop.songListing.song
     const art = prop.songListing.art
+
+    useEffect(() => {
+        const titleElement = titleRef.current;
+        if (!titleElement) return;
+
+        const updateScrollable = () => {
+            const textWidth = titleMeasureRef.current?.getBoundingClientRect().width ?? 0;
+            setIsTitleScrollable(textWidth > titleElement.clientWidth + 1);
+        };
+
+        const observer = new ResizeObserver(updateScrollable);
+        observer.observe(titleElement);
+        updateScrollable();
+
+        return () => observer.disconnect();
+    }, [song.title]);
 
     return (
         <>
@@ -32,7 +51,19 @@ function SongItem(prop: {songListing: SongListing}) {
                         </div>
                     )}
                     <span className={styles.copy}>
-                        <span className={styles.title}>{song.title}</span>
+                        <span
+                            ref={titleRef}
+                            className={`${styles.title} ${isTitleScrollable ? styles.titleScrollable : ""}`}
+                            title={song.title}
+                        >
+                            <span className={styles.titleTrack}>
+                                <span>{song.title}</span>
+                                {isTitleScrollable && <span aria-hidden="true">{song.title}</span>}
+                            </span>
+                            <span ref={titleMeasureRef} className={styles.titleMeasure} aria-hidden="true">
+                                {song.title}
+                            </span>
+                        </span>
                         <span className={styles.artist}>{song.artist ?? "Unknown Artist"}</span>
                     </span>
                 </button>

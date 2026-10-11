@@ -38,7 +38,7 @@ electron.contextBridge.exposeInMainWorld("electron", {
     getSongList: () => ipcRenderer.invoke("list:get"),
 
     settings: {
-        set: (save: Settings) => ipcRenderer.send("save:settings-set", save),
+        set: (save: Partial<Settings>) => ipcRenderer.send("save:settings-set", save),
         get: () => ipcRenderer.invoke("save:settings-get")
     },
 

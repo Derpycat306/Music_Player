@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from "react"
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
-import { ExplorerContext, type AlbumListing, type ArtistListing, type ExplorerChild, type ExplorerDirectory, type ExplorerLeaf, type ExplorerLeafType, type ExplorerView, type Folder, type PlaylistListing } from "./ExplorerContext";
+import { ExplorerContext, type AlbumListing, type ArtistListing, type ExplorerChild, type ExplorerDirectory, type ExplorerLeaf, type ExplorerView, type Folder, type PlaylistListing } from "./ExplorerContext";
 
 /** Type and interface definitions */
 
@@ -202,7 +202,6 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     } = usePlayer();
     const [currentViewType, setCurrentViewType] = useState<ExplorerView>("artists")
     const [currentSelectedId, setSelected] = useState<string | null>(null)
-    const [currentSongs, setCurrentSongs] = useState<SongListing[]>([])
     const [panelSongs, setPanelSongs] = useState<SongListing[]>([])
     const [recentAlbumIds, setRecentAlbumIds] = useState<string[]>([])
     const [showSelectedDetail, setShowSelectedDetail] = useState(false)
@@ -270,34 +269,6 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     const panelSelection = panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
     const panelChildren = panelSelection?.kind === "directory" ? panelSelection.children : [];
-
-    const currentSelected = useMemo(() => {
-        if (!currentSelectedId) return null;
-
-        const findLeaf = (directory: ExplorerDirectory): ExplorerLeaf | null => {
-            for (const child of directory.children) {
-                if (child.id === currentSelectedId && child.kind === "leaf") {
-                    return child;
-                }
-
-                if (child.kind === "directory") {
-                    const selected = findLeaf(child);
-                    if (selected) return selected;
-                }
-            }
-
-            return null;
-        };
-
-        return findLeaf(folder.artistsRoot) ?? findLeaf(folder.playlistsRoot);
-    }, [currentSelectedId, folder.artistsRoot, folder.playlistsRoot]);
-
-    const currentSelectedType = useMemo<ExplorerLeafType>(() => {
-        if (!currentSelected) return "none";
-        if (currentSelected.id.startsWith("album:")) return "album";
-        if (currentSelected.id.startsWith("playlist:")) return "playlist";
-        return "other";
-    }, [currentSelected]);
 
     const recentAlbums = useMemo(() => {
         const albums = new Map<string, ExplorerLeaf>();
@@ -384,7 +355,6 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     function startQueue(songsForQueue: SongListing[], selectedId?: string) {
         setQueue(songsForQueue, selectedId ?? null);
-        setCurrentSongs(songsForQueue);
         if (selectedId) setSelected(selectedId);
     }
 
@@ -422,7 +392,6 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     function openTemporaryPlaylist(name: string, songsForQueue: SongListing[]) {
         const localPlaylistId = `playlist:${name}`;
         setQueue(songsForQueue, localPlaylistId);
-        setCurrentSongs(songsForQueue);
         setSelected(localPlaylistId);
         setPanelSelectionId(localPlaylistId);
         setPanelParentId(null);
@@ -478,9 +447,9 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         resetToRoot(root);
     }
 
-    function openSelection(id: string) {
+    function openSelection(id: string): void {
         pushPanelHistory();
-        return selectLeaf(id);
+        selectLeaf(id);
     }
 
     return (
@@ -489,17 +458,13 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                 {
                     currentViewType,
                     currentSelectedId,
-                    currentSelectedType,
                     currentChildren,
-                    currentSelected,
-                    currentSongs,
                     panelSongs,
                     showSelectedDetail,
                     panelSelection,
                     panelChildren,
                     panelCanReturn: panelHistory.length > 0 || panelParentId !== null,
                     recentAlbums,
-                    canReturn: false,
                     folder,
                     filter,
                     setViewType,

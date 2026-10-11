@@ -1,7 +1,6 @@
 import { createContext } from "react";
 
 export type ExplorerView = "artists" | "albums" | "playlists"
-export type ExplorerLeafType = "none" | "album" | "playlist" | "other"
 
 export interface ExplorerNode {
     id: string;
@@ -28,30 +27,26 @@ export interface Folder {
     playlistsRoot: ExplorerDirectory;
 }
 
-export interface ArtistListing extends ExplorerDirectory {}
-export interface AlbumListing extends ExplorerLeaf {}
-export interface PlaylistListing extends ExplorerLeaf {}
+export type ArtistListing = ExplorerDirectory;
+export type AlbumListing = ExplorerLeaf;
+export type PlaylistListing = ExplorerLeaf;
 
 export interface ExplorerContextType {
     currentViewType: ExplorerView
     currentSelectedId: string | null
-    currentSelectedType: ExplorerLeafType
     currentChildren: ExplorerChild[]
-    currentSelected: ExplorerLeaf | null
-    currentSongs: SongListing[]
     panelSongs: SongListing[]
     showSelectedDetail: boolean
     panelSelection: ExplorerChild | null
     panelChildren: ExplorerChild[]
     panelCanReturn: boolean
     recentAlbums: ExplorerLeaf[]
-    canReturn: boolean
     folder: Folder
     filter: string
 
     setViewType: (type: ExplorerView) => void
     openView: () => void
-    openSelection: (id: string) => SongListing[]
+    openSelection: (id: string) => void
     setSelected: (id: string | null) => void
     setFilter: (filter: string) => void
     traverse: (id: string, shuffle?: boolean) => SongListing[]
