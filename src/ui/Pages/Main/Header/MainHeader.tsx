@@ -1,10 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MoreHoriz, Settings } from "iconoir-react";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
 import styles from "./MainHeader.module.css";
+
+type SearchResult = {
+    id: string;
+    name: string;
+    detail: string;
+    art: string | null;
+} & (
+    | { kind: "Artist" | "Album" | "Playlist"; listing?: never }
+    | { kind: "Song"; listing: SongListing }
+);
 
 function shuffleArray<T>(array: T[]): T[] {
     const result = [...array];
@@ -39,7 +49,7 @@ function getSongArt(song: Song, covers: AlbumCover[]): string | null {
 
 function MainHeader() {
     const { songs, covers, playSong, createLocalPlaylist } = usePlayer();
-    const { openTemporaryPlaylist, setViewType } = useExplorer();
+    const { openTemporaryPlaylist, setViewType, searchFolder, openSearchItem } = useExplorer();
     const [menuOpen, setMenuOpen] = useState(false);
     const [shuffleOpen, setShuffleOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -47,6 +57,9 @@ function MainHeader() {
     const [albumCount, setAlbumCount] = useState(1);
     const [shuffleWithinAlbums, setShuffleWithinAlbums] = useState(false);
     const [mode, setMode] = useState<"songs" | "albums">("songs");
+    const [search, setSearch] = useState("");
+    const [searchOpen, setSearchOpen] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
 
     const albumGroups = useMemo(() => {
         const groups = new Map<string, Song[]>();
@@ -64,9 +77,102 @@ function MainHeader() {
         }));
     }, [songs]);
 
+    const searchResults = useMemo<SearchResult[]>(() => {
+        const query = search.trim().toLowerCase();
+        if (!query) return [];
+
+        const results: SearchResult[] = [];
+        for (const artist of searchFolder.artistsRoot.children) {
+            if (artist.kind === "directory" && artist.name.toLowerCase().includes(query)) {
+                results.push({
+                    kind: "Artist",
+                    id: artist.id,
+                    name: artist.name,
+                    detail: `${artist.children.length} albums`,
+                    art: artist.art ?? null,
+                });
+            }
+        }
+
+        for (const album of searchFolder.albumsRoot.children) {
+            if (album.kind !== "leaf") continue;
+            const artist = album.songs[0]?.song.artist ?? "";
+            if (album.name.toLowerCase().includes(query) || artist.toLowerCase().includes(query)) {
+                results.push({
+                    kind: "Album",
+                    id: album.id,
+                    name: album.name,
+                    detail: `${artist || "Unknown Artist"} · ${album.songs.length} songs`,
+                    art: album.art ?? album.songs[0]?.art ?? null,
+                });
+            }
+        }
+
+        for (const playlist of searchFolder.playlistsRoot.children) {
+            if (playlist.kind === "leaf" && playlist.name.toLowerCase().includes(query)) {
+                results.push({
+                    kind: "Playlist",
+                    id: playlist.id,
+                    name: playlist.name,
+                    detail: `${playlist.songs.length} songs`,
+                    art: playlist.art ?? playlist.songs[0]?.art ?? null,
+                });
+            }
+        }
+
+        for (const song of songs) {
+            const artist = song.artist ?? "";
+            const album = song.album ?? "";
+            if (
+                song.title.toLowerCase().includes(query) ||
+                artist.toLowerCase().includes(query) ||
+                album.toLowerCase().includes(query)
+            ) {
+                const listing = { song, art: getSongArt(song, covers) };
+                results.push({
+                    kind: "Song",
+                    id: song.id,
+                    name: song.title,
+                    detail: `${artist || "Unknown Artist"} · ${album || "Single"}`,
+                    art: listing.art,
+                    listing,
+                });
+            }
+        }
+
+        return results.slice(0, 30);
+    }, [search, searchFolder, songs, covers]);
+
+    useEffect(() => {
+        function closeSearch(event: MouseEvent) {
+            if (!searchRef.current?.contains(event.target as Node)) setSearchOpen(false);
+        }
+
+        function handleSearchKey(event: KeyboardEvent) {
+            if (event.key === "Escape") setSearchOpen(false);
+        }
+
+        document.addEventListener("mousedown", closeSearch);
+        document.addEventListener("keydown", handleSearchKey);
+        return () => {
+            document.removeEventListener("mousedown", closeSearch);
+            document.removeEventListener("keydown", handleSearchKey);
+        };
+    }, []);
+
     function closeMenus() {
         setMenuOpen(false);
         setShuffleOpen(false);
+    }
+
+    function selectSearchResult(result: SearchResult) {
+        const type = result.kind === "Artist" ? "artists"
+            : result.kind === "Album" ? "albums"
+                : result.kind === "Playlist" ? "playlists"
+                    : "song";
+        openSearchItem(type, result.id, result.kind === "Song" ? result.listing : undefined);
+        setSearch("");
+        setSearchOpen(false);
     }
 
     function openMenu(event: React.MouseEvent<HTMLButtonElement>) {
@@ -234,7 +340,49 @@ function MainHeader() {
                     </ContextMenu>
                 )}
             </div>
-            <div className={styles.center}>Title</div>
+            <div className={styles.center}>
+                <div className={styles.search} ref={searchRef}>
+                    <input
+                        type="search"
+                        value={search}
+                        placeholder="Search artists, songs, albums, playlists"
+                        aria-label="Search artists, songs, albums, and playlists"
+                        aria-expanded={searchOpen && search.trim().length > 0}
+                        onFocus={() => setSearchOpen(true)}
+                        onChange={(event) => {
+                            setSearch(event.target.value);
+                            setSearchOpen(true);
+                        }}
+                    />
+                    {searchOpen && search.trim() && (
+                        <div className={styles.searchResults} role="listbox">
+                            {searchResults.length > 0 ? searchResults.map((result) => (
+                                <button
+                                    type="button"
+                                    className={styles.searchResult}
+                                    key={`${result.kind}:${result.id}`}
+                                    onClick={() => selectSearchResult(result)}
+                                >
+                                    <span className={styles.searchArt}>
+                                        {result.art
+                                            ? <img src={`music:///song?path=${encodeURIComponent(result.art)}`} alt="" />
+                                            : <span aria-hidden="true">♫</span>}
+                                    </span>
+                                    <span className={styles.searchCopy}>
+                                        <strong>{result.name}</strong>
+                                        <small>{result.detail}</small>
+                                    </span>
+                                    <span className={`${styles.searchType} ${styles[`searchType${result.kind}`]}`}>
+                                        {result.kind}
+                                    </span>
+                                </button>
+                            )) : (
+                                <p className={styles.searchEmpty}>No matching artists, songs, albums, or playlists.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
             <div className={styles.right}>
                 <Link to={"/settings"} className={styles.settingsLink}>
                     <Settings className={styles.settings} />

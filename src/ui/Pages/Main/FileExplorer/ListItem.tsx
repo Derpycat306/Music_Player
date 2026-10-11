@@ -36,7 +36,7 @@ function ListItem({ id, name, icon, onSelect, onContextMenu }: ListItemProps) {
         <div>
             <div
                 className={`${styles.item} ${id === currentSelectedId ? styles.selected : ""}`}
-                onClick={() => onSelect?.() ?? traverse(id)}
+                onClick={() => onSelect ? onSelect() : traverse(id)}
                 onContextMenu={onContextMenu}
             >
                 {icon && <div className={styles.icon}>{icon}</div>}

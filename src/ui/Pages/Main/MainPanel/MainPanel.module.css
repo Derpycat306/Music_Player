@@ -20,6 +20,12 @@
     padding: 34px clamp(20px, 4vw, 56px) 48px;
 }
 
+.songDetailContent {
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+}
+
 .content::-webkit-scrollbar {
     width: 8px;
 }
@@ -105,6 +111,49 @@
     margin: 0;
     padding: 24px 0;
     color: var(--text-muted);
+}
+
+.emptyPlaylist {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 30px 16px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.emptyPlaylistContent {
+    box-sizing: border-box;
+}
+
+.emptyPlaylistContent > .emptyPlaylist {
+    position: absolute;
+    top: 50%;
+    right: clamp(20px, 4vw, 56px);
+    left: clamp(20px, 4vw, 56px);
+    transform: translateY(-50%);
+}
+
+.emptyPlaylist p {
+    margin: 0;
+}
+
+.emptyPlaylistAction {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #d8c4ff;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.emptyPlaylistAction:hover,
+.emptyPlaylistAction:focus-visible {
+    color: #fff;
 }
 
 .cardGrid {
@@ -227,6 +276,65 @@
     font-size: 3rem;
 }
 
+.songDetail {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(24px, 4vw, 48px);
+    box-sizing: border-box;
+    min-height: 0;
+    padding: 24px 0;
+}
+
+.songDetailArt {
+    display: grid;
+    flex: 0 0 auto;
+    width: min(38vw, 48vh, 420px);
+    aspect-ratio: 1;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, #5b3b79, #1c253e);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+.songDetailArt img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.songDetailArt span {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 5rem;
+}
+
+.songDetailCopy {
+    width: min(100%, 560px);
+    min-width: 0;
+    text-align: left;
+}
+
+.songDetailCopy h1 {
+    margin: 8px 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 4rem);
+    overflow-wrap: anywhere;
+}
+
+.songDetailCopy > p:not(.eyebrow) {
+    margin: 4px 0;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+.songDetailActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
 .card strong,
 .card span {
     display: block;
@@ -265,10 +373,251 @@
     padding-bottom: 6px;
 }
 
+.heroTitle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.heroTitle h1 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.renamePlaylistButton {
+    display: grid;
+    flex: 0 0 32px;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.renamePlaylistButton:hover,
+.renamePlaylistButton:focus-visible {
+    border-color: rgba(214, 183, 255, 0.35);
+    background: rgba(214, 183, 255, 0.1);
+    color: #fff;
+    outline: none;
+}
+
+.renamePlaylistButton svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.playlistRename {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.playlistRename input {
+    width: 100%;
+    min-width: 0;
+    padding: 2px 0 4px;
+    border: 0;
+    border-bottom: 2px solid #c9a8f1;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: clamp(2rem, 4vw, 3.8rem);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.playlistRename input:focus {
+    outline: none;
+    border-bottom-color: #fff;
+}
+
+.playlistRenameError {
+    color: #ffb4b4;
+    font-size: 0.78rem;
+}
+
 .actions {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 10px;
     padding: 24px 0 18px;
+}
+
+.addSongs {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 18px;
+    padding: 16px;
+    border: 1px solid rgba(214, 183, 255, 0.16);
+    background: rgba(17, 17, 19, 0.5);
+}
+
+.addSongsSearch {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.addSongsSearch small {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+
+.addSongsSearch input {
+    width: 100%;
+    min-height: 38px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    border: 1px solid #71617d;
+    background: var(--sidebar);
+    color: var(--text);
+    font: inherit;
+}
+
+.addSongsToolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.addSongsToolbar button:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.addSongsResults {
+    max-height: 320px;
+    margin-top: 10px;
+    padding-right: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-color: rgba(216, 196, 255, 0.34) transparent;
+    scrollbar-width: auto;
+}
+
+.addSongsResults::-webkit-scrollbar {
+    width: 12px;
+}
+
+.addSongsResults::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.addSongsResults::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 8px;
+    background-color: rgba(216, 196, 255, 0.32);
+    background-clip: padding-box;
+}
+
+.addSongsResults::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(216, 196, 255, 0.58);
+}
+
+.addSongResult {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    gap: 16px;
+    min-height: 54px;
+    padding: 6px 8px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.addSongResult:hover,
+.addSongResult:focus-visible {
+    border-bottom-color: rgba(214, 183, 255, 0.32);
+    background: rgba(255, 255, 255, 0.07);
+    outline: none;
+}
+
+.addSongResult[aria-pressed="true"] .addSongAction {
+    color: #ff9ca8;
+}
+
+.addSongResult:hover .addSongAction,
+.addSongResult:focus-visible .addSongAction {
+    color: #d6b7ff;
+}
+
+.addSongArt {
+    display: grid;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #5b3b79, #1c253e);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.addSongArt img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.addSongInfo {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.addSongInfo strong,
+.addSongInfo small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.addSongInfo strong {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.addSongInfo small {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+}
+
+.addSongAction {
+    flex: 0 0 auto;
+    color: #d6b7ff;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .playlistForm {
@@ -319,7 +668,8 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-width: 1000px;
+    width: 100%;
+    box-sizing: border-box;
     padding: 8px;
 }
 
@@ -526,7 +876,27 @@
         height: 130px;
     }
 
+    .songDetail {
+        align-items: flex-start;
+        flex-direction: column;
+        min-height: 0;
+        gap: 20px;
+    }
+
+    .songDetailArt {
+        flex: 0 0 min(68vw, 320px);
+        width: min(68vw, 320px);
+    }
+
+    .songDetailCopy {
+        width: 100%;
+    }
+
     .hero h1 {
+        font-size: 2rem;
+    }
+
+    .playlistRename input {
         font-size: 2rem;
     }
 

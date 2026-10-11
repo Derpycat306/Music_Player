@@ -13,8 +13,8 @@ function FileExplorer() {
         setViewType,
         openView,
         currentChildren,
+        openExplorerItem,
         startQueue,
-        traverse,
     } = useExplorer()
     const [isThinView, setIsThinView] = useState(() => window.innerWidth <= 700);
     const [contextMenu, setContextMenu] = useState<{
@@ -42,7 +42,7 @@ function FileExplorer() {
 
     function selectItem(id: string) {
         const child = currentChildren.find((entry) => entry.id === id);
-        const selectedSongs = traverse(id);
+        const selectedSongs = openExplorerItem(id);
 
         if (isThinView && child?.kind === "leaf" && selectedSongs.length > 0) {
             startQueue(selectedSongs, id);

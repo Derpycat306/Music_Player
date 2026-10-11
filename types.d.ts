@@ -67,6 +67,13 @@ type Settings = {
     recentAlbums: string[];
     lastQueue: SongListing[];
     lastSong: SongListing | null;
+    lastPlaybackPage?: {
+        path: string[];
+        selectionId: string | null;
+        showDetail: boolean;
+        songDetail: SongListing | null;
+        largeView: boolean;
+    } | null;
     explorerWidth?: number;
     songListWidth?: number;
 };

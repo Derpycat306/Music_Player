@@ -112,6 +112,28 @@
     white-space: nowrap;
 }
 
+.viewModeButton {
+    align-self: flex-start;
+    min-height: 24px;
+    margin-top: 1px;
+    padding: 0 8px;
+    border: 1px solid rgba(214, 183, 255, 0.28);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #d8c4ff;
+    font: inherit;
+    font-size: 0.68rem;
+    cursor: pointer;
+}
+
+.viewModeButton:hover,
+.viewModeButton:focus-visible {
+    border-color: rgba(214, 183, 255, 0.6);
+    background: rgba(214, 183, 255, 0.12);
+    color: #fff;
+    outline: none;
+}
+
 .close {
     flex: 0 0 26px;
     width: 26px;

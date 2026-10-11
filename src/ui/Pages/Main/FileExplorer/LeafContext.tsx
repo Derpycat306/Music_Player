@@ -14,7 +14,7 @@ type Props = {
 
 function PlaylistContext({id, name, X, Y, isPlaylist, onClose}: Props) {
     const {deletePlaylist, playSong} = usePlayer()
-    const {traverse, startQueue} = useExplorer()
+    const {openExplorerItem, startQueue} = useExplorer()
 
     function onDelete(name: string) {
         if (window.confirm(`Delete playlist "${name}"?`)) {
@@ -24,7 +24,7 @@ function PlaylistContext({id, name, X, Y, isPlaylist, onClose}: Props) {
     }
 
     function onShuffle() {
-        const queue = traverse(id, true);
+        const queue = openExplorerItem(id, true);
         const topSong = queue.at(0)
         if(topSong !== undefined) {
             startQueue(queue, id);

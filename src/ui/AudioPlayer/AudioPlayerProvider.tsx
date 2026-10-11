@@ -19,6 +19,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [duration, setDuration] = useState(0);
     const [volume, setCurrentVolume] = useState(1);
     const [autoplay, setAutoplay] = useState(false);
+    const [repeat, setRepeat] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [playlists, setPlaylists] = useState<Set<Playlist>>(new Set());
     const [localPlaylists, setLocalPlaylists] = useState<Playlist[]>([]);
@@ -36,6 +37,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const favoritesRef = useRef(favorites);
     const currentSongRef = useRef(currentSong);
     const autoplayRef = useRef(autoplay);
+    const repeatRef = useRef(repeat);
     const queueRef = useRef<SongListing[]>([]);
     const queueSourceIdRef = useRef<string | null>(null);
 
@@ -75,6 +77,10 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     useEffect(() => {
         autoplayRef.current = autoplay;
     }, [autoplay]);
+
+    useEffect(() => {
+        repeatRef.current = repeat;
+    }, [repeat]);
     
     const play = useCallback(() => {
         audioRef.current?.play();
@@ -135,6 +141,13 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
         const ended = () => {
             setPlaying(false);
+
+            if (repeatRef.current) {
+                audio.currentTime = 0;
+                void audio.play();
+                setPlaying(true);
+                return;
+            }
 
             if (!autoplayRef.current) {
                 return;
@@ -322,6 +335,10 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         }
     }
 
+    function toggleRepeat() {
+        setRepeat((enabled) => !enabled);
+    }
+
     function createLocalPlaylist(name: string, songs: SongListing[]) {
         const cleanedName = name.trim();
         if (!cleanedName) return;
@@ -385,6 +402,36 @@ export function PlayerProvider({ children }: PropsWithChildren) {
 
             return new Set(updated);
         })
+    }
+
+    function renamePlaylist(name: string, newName: string): boolean {
+        const cleanedName = newName.trim();
+        if (!cleanedName || name.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) {
+            return false;
+        }
+        if (cleanedName === name) return true;
+        if (cleanedName.toLowerCase() === FAVORITES_PLAYLIST_NAME.toLowerCase()) return false;
+        if ([...playlistsWithFavorites].some(
+            (playlist) => playlist.name.toLowerCase() !== name.toLowerCase() &&
+                playlist.name.toLowerCase() === cleanedName.toLowerCase(),
+        )) {
+            return false;
+        }
+
+        setPlaylists((current) => new Set(
+            [...current].map((playlist) => playlist.name.toLowerCase() === name.toLowerCase()
+                ? { ...playlist, name: cleanedName }
+                : playlist),
+        ));
+        setLocalPlaylists((current) => current.map((playlist) =>
+            playlist.name.toLowerCase() === name.toLowerCase()
+                ? { ...playlist, name: cleanedName }
+                : playlist,
+        ));
+        if (queueSourceIdRef.current?.toLowerCase() === `playlist:${name}`.toLowerCase()) {
+            queueSourceIdRef.current = `playlist:${cleanedName}`;
+        }
+        return true;
     }
 
     function reorderPlaylist(name: string, songIds: string[]) {
@@ -545,6 +592,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 duration,
                 volume,
                 autoplay,
+                repeat,
                 playlists: playlistsWithFavorites,
                 setQueue,
                 queueSong,
@@ -558,7 +606,9 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 playNext,
                 playPrevious,
                 toggleAutoplay,
+                toggleRepeat,
                 addPlaylist,
+                renamePlaylist,
                 reorderPlaylist,
                 removePlaylistSong,
                 createLocalPlaylist,

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePlayer } from '../../../../AudioPlayer/useAudioPlayer';
+import { useExplorer } from '../../ExplorerContext/UseExplorer';
 import SongItem from './Item/SongItem';
 import styles from './SongList.module.css'
 
@@ -44,9 +45,18 @@ function CurrentTitle({ title }: { title: string }) {
 
 function SongList () {
     const {currentQueue, currentSong} = usePlayer();
+    const {largeView, setLargeView, isPlaybackContext, returnToPlaybackContext} = useExplorer();
+
+    function handleViewAction() {
+        if (!isPlaybackContext) {
+            returnToPlaybackContext();
+        } else {
+            setLargeView(!largeView);
+        }
+    }
 
     return (
-        currentSong && currentQueue.length > 0 && <div className={styles.module}>
+        currentSong && currentQueue.length > 1 && <div className={styles.module}>
             <div className={styles.name}>
                 <div className={styles.currentArt}>
                     {currentSong.art && (
@@ -62,6 +72,19 @@ function SongList () {
                     <span className={styles.currentArtist} title={currentSong.song.artist ?? "Unknown Artist"}>
                         {currentSong.song.artist ?? "Unknown Artist"}
                     </span>
+                    <button
+                        type="button"
+                        className={styles.viewModeButton}
+                        aria-label={!isPlaybackContext
+                            ? "Return to the currently playing context"
+                            : largeView ? "Switch to normal view" : "Switch to large view"}
+                        title={!isPlaybackContext
+                            ? "Return to currently playing context"
+                            : largeView ? "Normal view" : "Large view"}
+                        onClick={handleViewAction}
+                    >
+                        {!isPlaybackContext ? "Return" : largeView ? "Normal view" : "Large view"}
+                    </button>
                 </div>
             </div>
             <div className={styles.songs}>

@@ -3,6 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../../../../../AudioPlayer/useAudioPlayer";
 import SongContext from "./SongContext";
 
+function formatDuration(seconds: number): string {
+    if (!Number.isFinite(seconds) || seconds < 0) return "--:--";
+    return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`;
+}
+
 function SongItem(prop: {songListing: SongListing}) {
     const { playSong, currentSong } = usePlayer();
     const [contextMenu, setContextMenu] = useState<{X: number, Y: number} | null>(null);
@@ -66,6 +71,7 @@ function SongItem(prop: {songListing: SongListing}) {
                         </span>
                         <span className={styles.artist}>{song.artist ?? "Unknown Artist"}</span>
                     </span>
+                    <span className={styles.duration}>{formatDuration(song.duration)}</span>
                 </button>
             </div>
             {contextMenu && (

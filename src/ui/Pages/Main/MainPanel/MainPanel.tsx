@@ -17,6 +17,26 @@ function cardType(child: ExplorerChild): string {
     return "Collection";
 }
 
+function matchesSongSearch(song: Song, query: string): boolean {
+    const filters = query.split("/").map((filter) => filter.trim()).filter(Boolean);
+    if (filters.length === 0) return false;
+
+    return filters.every((filter) => {
+        const prefix = filter[0];
+        const isQualified = [".", "@", "#"].includes(prefix ?? "");
+        const text = isQualified ? filter.slice(1).trim() : filter;
+        if (!text) return !isQualified;
+        const normalizedText = text.toLowerCase();
+
+        if (prefix === ".") return song.title.toLowerCase().includes(normalizedText);
+        if (prefix === "@") return song.artist?.toLowerCase().includes(normalizedText) ?? false;
+        if (prefix === "#") return song.album?.toLowerCase().includes(normalizedText) ?? false;
+
+        return [song.title, song.artist, song.album]
+            .some((value) => value?.toLowerCase().includes(normalizedText));
+    });
+}
+
 function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: ExplorerChild) => void }) {
     const art = artworkFor(child);
     const pressedByPointer = useRef(false);
@@ -366,6 +386,8 @@ function MainPanel() {
         panelSelection,
         panelChildren,
         panelCanReturn,
+        songDetail,
+        largeView,
         returnToParent,
         openSelection,
         selectLeaf,
@@ -373,17 +395,24 @@ function MainPanel() {
         traverse,
         startQueue,
         reorderPlaylist,
+        addSongToPlaylist,
+        addSongsToPlaylist,
         removePlaylistSong,
         openTemporaryPlaylist,
+        renamePlaylist,
         filter,
     } = useExplorer();
     const {
         songs,
+        covers,
+        currentSong,
         playSong,
         addPlaylist,
         deletePlaylist,
         autoplay,
+        repeat,
         toggleAutoplay,
+        toggleRepeat,
         createLocalPlaylist,
         setQueue,
         isFavorite,
@@ -392,11 +421,20 @@ function MainPanel() {
     const pressedByPointer = useRef(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const [editMode, setEditMode] = useState(false);
+    const [isAddingSongs, setIsAddingSongs] = useState(false);
+    const [songSearch, setSongSearch] = useState("");
+    const [isRenamingPlaylist, setIsRenamingPlaylist] = useState(false);
+    const [playlistNameDraft, setPlaylistNameDraft] = useState("");
+    const [playlistRenameError, setPlaylistRenameError] = useState("");
 
     useEffect(() => {
         contentRef.current?.scrollTo({ top: 0 });
         setEditMode(false);
-    }, [panelSelection?.id, currentSelectedId, showSelectedDetail]);
+        setIsAddingSongs(false);
+        setSongSearch("");
+        setIsRenamingPlaylist(false);
+        setPlaylistRenameError("");
+    }, [panelSelection?.id, songDetail?.song.id, currentSelectedId, showSelectedDetail]);
 
     const artists = folder.artistsRoot.children;
     const playlists = folder.playlistsRoot.children;
@@ -563,7 +601,42 @@ function MainPanel() {
         if (panelSelection?.kind !== "leaf") return <HomeView />;
         const art = panelSelection.art ?? panelSelection.songs[0]?.art;
         const isPlaylist = panelSelection.id.startsWith("playlist:");
+        const selectedPlaylistName = panelSelection.name;
         const canReorder = isPlaylist && filter.length === 0;
+        const currentPlaylistSongIds = new Set(panelSongs.map(({ song }) => song.id));
+        const searchQuery = songSearch.trim().toLowerCase();
+        const matchingSongs = searchQuery
+            ? songs.filter((song) => matchesSongSearch(song, searchQuery))
+            : [];
+        const songsToAdd = matchingSongs.filter((song) => !currentPlaylistSongIds.has(song.id));
+        function savePlaylistName() {
+            const name = playlistNameDraft.trim();
+            if (!name) {
+                setPlaylistRenameError("Playlist name cannot be empty.");
+                return;
+            }
+            if (!renamePlaylist(selectedPlaylistName, name)) {
+                setPlaylistRenameError("A playlist with that name already exists.");
+                return;
+            }
+            setIsRenamingPlaylist(false);
+            setPlaylistRenameError("");
+        }
+
+        function artworkForSong(song: Song): string | null {
+            const artist = song.artist;
+            const album = song.album;
+            const albumArt = album
+                ? covers.find((cover) =>
+                    cover.id === `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
+                )
+                : undefined;
+            const artistArt = artist
+                ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
+                : undefined;
+            const rootArt = covers.find((cover) => cover.id === "root-art");
+            return albumArt?.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
+        }
 
         return (
             <>
@@ -574,22 +647,78 @@ function MainPanel() {
                     </div>
                     <div className={styles.heroCopy}>
                         <span>{isPlaylist ? "Playlist" : "Album"}</span>
-                        <h1>{panelSelection.name}</h1>
+                        {isPlaylist && panelSelection.name.toLowerCase() !== "favorites" && isRenamingPlaylist ? (
+                            <div className={styles.playlistRename}>
+                                <input
+                                    aria-label="Playlist name"
+                                    autoFocus
+                                    value={playlistNameDraft}
+                                    onChange={(event) => {
+                                        setPlaylistNameDraft(event.target.value);
+                                        setPlaylistRenameError("");
+                                    }}
+                                    onBlur={() => {
+                                        setIsRenamingPlaylist(false);
+                                        setPlaylistRenameError("");
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter") {
+                                            event.preventDefault();
+                                            savePlaylistName();
+                                        } else if (event.key === "Escape") {
+                                            setIsRenamingPlaylist(false);
+                                            setPlaylistRenameError("");
+                                        }
+                                    }}
+                                />
+                                {playlistRenameError && (
+                                    <small className={styles.playlistRenameError} role="alert">
+                                        {playlistRenameError}
+                                    </small>
+                                )}
+                            </div>
+                        ) : (
+                            <div className={styles.heroTitle}>
+                                <h1>{panelSelection.name}</h1>
+                                {isPlaylist && panelSelection.name.toLowerCase() !== "favorites" && (
+                                    <button
+                                        type="button"
+                                        className={styles.renamePlaylistButton}
+                                        aria-label={`Rename playlist ${panelSelection.name}`}
+                                        title="Rename playlist"
+                                        onClick={() => {
+                                            setPlaylistNameDraft(panelSelection.name);
+                                            setPlaylistRenameError("");
+                                            setIsRenamingPlaylist(true);
+                                        }}
+                                    >
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M12 20h9" />
+                                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         <p>{panelSelection.songs[0]?.song.artist ?? "Your library"} · {panelSelection.songs.length} songs</p>
                     </div>
                 </section>
                 <div className={styles.actions}>
-                    <button type="button" className={styles.primaryAction}
-                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection))}
-                        onClick={() => handleActionClick(() => playSelection(panelSelection))}>Play</button>
-                    <button type="button" className={styles.secondaryAction}
-                        onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection, true))}
-                        onClick={() => handleActionClick(() => playSelection(panelSelection, true))}>Shuffle</button>
-                    <button type="button" 
-                        className={autoplay ? styles.primaryAction : styles.secondaryAction}
-                        onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
-                        onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
-                    {isPlaylist && (
+                    {panelSelection.songs.length > 0 && (
+                        <>
+                            <button type="button" className={styles.primaryAction}
+                                onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection))}
+                                onClick={() => handleActionClick(() => playSelection(panelSelection))}>Play</button>
+                            <button type="button" className={styles.secondaryAction}
+                                onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection, true))}
+                                onClick={() => handleActionClick(() => playSelection(panelSelection, true))}>Shuffle</button>
+                            <button type="button"
+                                className={autoplay ? styles.primaryAction : styles.secondaryAction}
+                                onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
+                                onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
+                        </>
+                    )}
+                    {isPlaylist && panelSelection.songs.length > 0 && (
                         <button
                             type="button"
                             className={editMode ? styles.primaryAction : styles.secondaryAction}
@@ -597,6 +726,19 @@ function MainPanel() {
                             onClick={() => setEditMode((editing) => !editing)}
                         >
                             {editMode ? "Done" : "Edit"}
+                        </button>
+                    )}
+                    {isPlaylist && (
+                        <button
+                            type="button"
+                            className={isAddingSongs ? styles.primaryAction : styles.secondaryAction}
+                            aria-pressed={isAddingSongs}
+                            onClick={() => {
+                                setIsAddingSongs((adding) => !adding);
+                                setSongSearch("");
+                            }}
+                        >
+                            {isAddingSongs ? "Done Adding" : "Add Songs"}
                         </button>
                     )}
                     {isPlaylist && panelSelection.name !== "Favorites" && (
@@ -609,6 +751,92 @@ function MainPanel() {
                         </button>
                     )}
                 </div>
+                {isPlaylist && isAddingSongs && (
+                    <section className={styles.addSongs}>
+                        <label className={styles.addSongsSearch}>
+                            <span>Search your library by song, artist, or album</span>
+                            <input
+                                type="search"
+                                value={songSearch}
+                                placeholder="Text, .song, @artist, #album / more filters"
+                                onChange={(event) => setSongSearch(event.target.value)}
+                                autoFocus
+                            />
+                            <small>Use .text for song names, @text for artists, #text for albums; / combines filters.</small>
+                        </label>
+                        {!searchQuery ? (
+                            <p className={styles.emptyState}>Enter a name to find songs to add.</p>
+                        ) : matchingSongs.length > 0 ? (
+                            <>
+                                <div className={styles.addSongsToolbar}>
+                                    <span>{songsToAdd.length} songs available to add</span>
+                                    <button
+                                        type="button"
+                                        className={styles.secondaryAction}
+                                        disabled={songsToAdd.length === 0}
+                                        onClick={() => addSongsToPlaylist(songsToAdd.map((song) => ({
+                                            song,
+                                            art: artworkForSong(song),
+                                        })))}
+                                    >
+                                        Add All
+                                    </button>
+                                </div>
+                                <div className={styles.addSongsResults}>
+                                    {matchingSongs.map((song) => {
+                                    const songArt = artworkForSong(song);
+                                    const isInPlaylist = currentPlaylistSongIds.has(song.id);
+                                    return (
+                                        <button
+                                            type="button"
+                                            className={styles.addSongResult}
+                                            key={song.id}
+                                            aria-pressed={isInPlaylist}
+                                            aria-label={`${isInPlaylist ? "Remove" : "Add"} ${song.title} ${isInPlaylist ? "from" : "to"} ${panelSelection.name}`}
+                                            onClick={() => addSongToPlaylist({ song, art: songArt })}
+                                        >
+                                            <div className={styles.addSongArt}>
+                                                {songArt ? (
+                                                    <img
+                                                        src={`music:///song?path=${encodeURIComponent(songArt)}`}
+                                                        alt=""
+                                                    />
+                                                ) : (
+                                                    <span aria-hidden="true">♫</span>
+                                                )}
+                                            </div>
+                                            <span className={styles.addSongInfo}>
+                                                <strong>{song.title}</strong>
+                                                <small>{song.artist ?? "Unknown Artist"} · {song.album ?? "Single"}</small>
+                                            </span>
+                                            <span className={styles.addSongAction}>
+                                                {isInPlaylist ? "Remove" : "Add"}
+                                            </span>
+                                        </button>
+                                    );
+                                    })}
+                                </div>
+                            </>
+                        ) : (
+                            <p className={styles.emptyState}>No matching songs left to add.</p>
+                        )}
+                    </section>
+                )}
+                {isPlaylist && panelSelection.songs.length === 0 && (
+                    <div className={styles.emptyPlaylist}>
+                        <p>This playlist is waiting for its first encore.</p>
+                        <button
+                            type="button"
+                            className={styles.emptyPlaylistAction}
+                            onClick={() => {
+                                setIsAddingSongs(true);
+                                setSongSearch("");
+                            }}
+                        >
+                            Add songs to get things started
+                        </button>
+                    </div>
+                )}
                 <TrackTable
                     songs={panelSongs}
                     canReorder={canReorder}
@@ -623,15 +851,91 @@ function MainPanel() {
         );
     }
 
-    const view = selectedLeafIsInCurrentContext
+    const view = largeView && currentSong
+        ? (
+            <section className={styles.songDetail}>
+                <div className={`${styles.songDetailArt} ${!currentSong.art ? styles.cardArtEmpty : ""}`}>
+                    {currentSong.art
+                        ? <img src={`music:///song?path=${encodeURIComponent(currentSong.art)}`} alt="" />
+                        : <span aria-hidden="true">♫</span>}
+                </div>
+                <div className={styles.songDetailCopy}>
+                    <p className={styles.eyebrow}>Now Playing</p>
+                    <h1>{currentSong.song.title}</h1>
+                    <p>{currentSong.song.artist ?? "Unknown Artist"}</p>
+                    <p>{currentSong.song.album ?? "Single"}</p>
+                    <div className={styles.songDetailActions}>
+                        <button
+                            type="button"
+                            className={styles.primaryAction}
+                            onClick={() => void playSong(currentSong)}
+                        >
+                            Play
+                        </button>
+                        <button
+                            type="button"
+                            className={autoplay ? styles.primaryAction : styles.secondaryAction}
+                            aria-pressed={autoplay}
+                            onClick={toggleAutoplay}
+                        >
+                            Autoplay
+                        </button>
+                    </div>
+                </div>
+            </section>
+        )
+        : songDetail
+        ? (
+            <section className={styles.songDetail}>
+                <div className={`${styles.songDetailArt} ${!songDetail.art ? styles.cardArtEmpty : ""}`}>
+                    {songDetail.art
+                        ? <img src={`music:///song?path=${encodeURIComponent(songDetail.art)}`} alt="" />
+                        : <span aria-hidden="true">♫</span>}
+                </div>
+                <div className={styles.songDetailCopy}>
+                    <p className={styles.eyebrow}>Song</p>
+                    <h1>{songDetail.song.title}</h1>
+                    <p>{songDetail.song.artist ?? "Unknown Artist"}</p>
+                    <p>{songDetail.song.album ?? "Single"}</p>
+                    <div className={styles.songDetailActions}>
+                        <button
+                            type="button"
+                            className={styles.primaryAction}
+                            onClick={() => {
+                                startQueue([songDetail], `song:${songDetail.song.id}`);
+                                void playSong(songDetail);
+                            }}
+                        >
+                            Play
+                        </button>
+                        <button
+                            type="button"
+                            className={repeat ? styles.primaryAction : styles.secondaryAction}
+                            aria-pressed={repeat}
+                            onClick={toggleRepeat}
+                        >
+                            Repeat
+                        </button>
+                    </div>
+                </div>
+            </section>
+        )
+        : selectedLeafIsInCurrentContext
         ? <DetailView />
         : panelSelection?.kind === "directory"
             ? <DirectoryView />
             : <HomeView />;
 
+    const isEmptyPlaylist = panelSelection?.kind === "leaf" &&
+        panelSelection.id.startsWith("playlist:") &&
+        panelSelection.songs.length === 0;
+
     return (
         <div className={styles.main}>
-            <div ref={contentRef} className={styles.content}>
+            <div
+                ref={contentRef}
+                className={`${styles.content} ${songDetail || largeView ? styles.songDetailContent : ""} ${isEmptyPlaylist && !isAddingSongs ? styles.emptyPlaylistContent : ""}`}
+            >
                 {canGoBack && (
                     <button
                         type="button"

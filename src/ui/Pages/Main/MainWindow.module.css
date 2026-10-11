@@ -54,6 +54,10 @@
     grid-column: 4;
 }
 
+.resizeHidden {
+    display: none;
+}
+
 .resizeHandle::after {
     position: absolute;
     top: 0;

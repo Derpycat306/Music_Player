@@ -39,6 +39,10 @@ export interface ExplorerContextType {
     showSelectedDetail: boolean
     panelSelection: ExplorerChild | null
     panelChildren: ExplorerChild[]
+    searchFolder: Folder
+    songDetail: SongListing | null
+    largeView: boolean
+    isPlaybackContext: boolean
     panelCanReturn: boolean
     recentAlbums: ExplorerLeaf[]
     folder: Folder
@@ -50,9 +54,16 @@ export interface ExplorerContextType {
     setSelected: (id: string | null) => void
     setFilter: (filter: string) => void
     traverse: (id: string, shuffle?: boolean) => SongListing[]
+    openExplorerItem: (id: string, shuffle?: boolean) => SongListing[]
+    openSearchItem: (type: ExplorerView | "song", id: string, listing?: SongListing) => void
+    setLargeView: (enabled: boolean) => void
+    returnToPlaybackContext: () => void
+    renamePlaylist: (name: string, newName: string) => boolean
     selectLeaf: (id: string, shuffle?: boolean) => SongListing[]
     startQueue: (songs: SongListing[], selectedId?: string) => void
     reorderPlaylist: (songs: SongListing[]) => boolean
+    addSongToPlaylist: (song: SongListing) => boolean
+    addSongsToPlaylist: (songs: SongListing[]) => boolean
     removePlaylistSong: (songId: string) => boolean
     openTemporaryPlaylist: (name: string, songs: SongListing[]) => void
     returnToParent: () => void

@@ -4,8 +4,10 @@ import styles from "./MainWindow.module.css";
 import MainHeader from "./Header/MainHeader";
 import MainPanel from "./MainPanel/MainPanel";
 import SongList from "./SongListing/Songs/SongList";
+import { usePlayer } from "../../AudioPlayer/useAudioPlayer";
 
 function MainWindow() {
+    const { currentQueue } = usePlayer();
     const mainRef = useRef<HTMLDivElement>(null);
     const dragRef = useRef<{ side: "explorer" | "songs"; startX: number; startWidth: number } | null>(null);
     const [explorerWidth, setExplorerWidth] = useState(200);
@@ -101,7 +103,7 @@ function MainWindow() {
                 ref={mainRef}
                 className={`${styles.main} ${isResizing ? styles.resizing : ""}`}
                 style={{
-                    gridTemplateColumns: `${explorerWidth}px 8px minmax(0, 1fr) 8px ${songListWidth}px`,
+                    gridTemplateColumns: `${explorerWidth}px 8px minmax(0, 1fr) ${currentQueue.length > 1 ? `8px ${songListWidth}px` : "0px 0px"}`,
                 }}
             >
                 <div className={styles.explorer}><FileExplorer /></div>
@@ -123,7 +125,7 @@ function MainWindow() {
                 />
                 <div className={styles.panel}><MainPanel /></div>
                 <div
-                    className={`${styles.resizeHandle} ${styles.resizeSongs}`}
+                    className={`${styles.resizeHandle} ${styles.resizeSongs} ${currentQueue.length <= 1 ? styles.resizeHidden : ""}`}
                     role="separator"
                     aria-label="Resize song list"
                     aria-orientation="vertical"

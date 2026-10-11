@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from "react"
+import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react"
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import { ExplorerContext, type AlbumListing, type ArtistListing, type ExplorerChild, type ExplorerDirectory, type ExplorerLeaf, type ExplorerView, type Folder, type PlaylistListing } from "./ExplorerContext";
 
@@ -191,12 +191,18 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
     };
 }
 
+type PlaybackPage = NonNullable<Settings["lastPlaybackPage"]>;
+
 export function ExplorerProvider({ children }: PropsWithChildren) {
     const {
         songs,
         covers,
         playlists,
         setQueue,
+        isFavorite,
+        addPlaylist: addSavedPlaylistSong,
+        renamePlaylist: renameSavedPlaylist,
+        toggleFavorite,
         reorderPlaylist: savePlaylistOrder,
         removePlaylistSong: removeSavedPlaylistSong,
     } = usePlayer();
@@ -206,29 +212,48 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     const [recentAlbumIds, setRecentAlbumIds] = useState<string[]>([])
     const [showSelectedDetail, setShowSelectedDetail] = useState(false)
     const [panelSelectionId, setPanelSelectionId] = useState<string | null>(null)
-    const [panelParentId, setPanelParentId] = useState<string | null>(null)
-    const [panelHistory, setPanelHistory] = useState<Array<{
-        selectionId: string | null;
-        parentId: string | null;
-        showDetail: boolean;
-        songs: SongListing[];
-    }>>([])
+    const [panelPath, setPanelPath] = useState<string[]>([])
+    const [songDetail, setSongDetail] = useState<SongListing | null>(null)
+    const [largeView, setLargeViewState] = useState(false)
+    const [playbackPage, setPlaybackPage] = useState<PlaybackPage | null>(null)
+    const [playbackSettingsLoaded, setPlaybackSettingsLoaded] = useState(false)
+    const playbackPageTouched = useRef(false)
     const [filter, setFilter] = useState("");
 
     useEffect(() => {
+        let active = true;
         void window.electron.settings.get().then((settings) => {
+            if (!active) return;
             setRecentAlbumIds(settings.recentAlbums ?? []);
+            if (!playbackPageTouched.current && settings.lastPlaybackPage) {
+                setPlaybackPage(settings.lastPlaybackPage);
+            }
+            setPlaybackSettingsLoaded(true);
         });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
-    const folder = useMemo(() => {
-        return build(
-            songs,
-            covers,
-            [...playlists],
-            filter,
-        );
-    }, [songs, covers, playlists, filter])
+    useEffect(() => {
+        if (!playbackSettingsLoaded || !playbackPage) return;
+        void window.electron.settings.set({ lastPlaybackPage: playbackPage });
+    }, [playbackPage, playbackSettingsLoaded]);
+
+    function updatePlaybackPage(page: PlaybackPage | null) {
+        playbackPageTouched.current = true;
+        setPlaybackPage(page);
+    }
+
+    const searchFolder = useMemo(
+        () => build(songs, covers, [...playlists], ""),
+        [songs, covers, playlists],
+    );
+    const folder = useMemo(
+        () => filter ? build(songs, covers, [...playlists], filter) : searchFolder,
+        [songs, covers, playlists, filter, searchFolder],
+    );
 
     const currentRoot = currentViewType === "artists"
         ? folder.artistsRoot
@@ -255,20 +280,44 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         };
 
         return (id: string) => {
-            const root = id === folder.artistsRoot.id
-                ? folder.artistsRoot
-                : id === folder.albumsRoot.id
-                    ? folder.albumsRoot
-                    : id === folder.playlistsRoot.id
-                        ? folder.playlistsRoot
+            const root = id === searchFolder.artistsRoot.id
+                ? searchFolder.artistsRoot
+                : id === searchFolder.albumsRoot.id
+                    ? searchFolder.albumsRoot
+                    : id === searchFolder.playlistsRoot.id
+                        ? searchFolder.playlistsRoot
                         : null;
             return root ? { node: root, parent: null } :
-                find(folder.artistsRoot, id) ?? find(folder.albumsRoot, id) ?? find(folder.playlistsRoot, id);
+                find(searchFolder.artistsRoot, id) ?? find(searchFolder.albumsRoot, id) ?? find(searchFolder.playlistsRoot, id);
         };
-    }, [folder]);
+    }, [searchFolder]);
 
     const panelSelection = panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
     const panelChildren = panelSelection?.kind === "directory" ? panelSelection.children : [];
+    const isPlaybackContext = playbackPage !== null &&
+        playbackPage.selectionId === panelSelectionId &&
+        playbackPage.showDetail === showSelectedDetail &&
+        playbackPage.songDetail?.song.id === songDetail?.song.id &&
+        playbackPage.path.length === panelPath.length &&
+        playbackPage.path.every((id, index) => id === panelPath[index]);
+
+    function setLargeView(enabled: boolean) {
+        setLargeViewState(enabled);
+        if (isPlaybackContext) {
+            updatePlaybackPage(playbackPage ? { ...playbackPage, largeView: enabled } : null);
+        }
+    }
+
+    function rememberPlaybackPage(path: string[], selectionId: string | null, detail: SongListing | null) {
+        updatePlaybackPage({
+            path,
+            selectionId,
+            showDetail: detail !== null || showSelectedDetail,
+            songDetail: detail,
+            largeView,
+        });
+    }
+
 
     const recentAlbums = useMemo(() => {
         const albums = new Map<string, ExplorerLeaf>();
@@ -288,43 +337,56 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
             .filter((album): album is ExplorerLeaf => album !== undefined);
     }, [folder.artistsRoot, recentAlbumIds]);
 
-    function pushPanelHistory() {
-        setPanelHistory((history) => [...history, {
-            selectionId: panelSelectionId,
-            parentId: panelParentId,
-            showDetail: showSelectedDetail,
-            songs: panelSongs,
-        }]);
-    }
-
     function traverse(id: string, shuffle = false): SongListing[] {
         const target = findNode(id)?.node;
         if (!target) return [];
+        setSelected(target.id);
+
+        const nextPath = panelSelection?.kind === "directory" &&
+            panelPath.at(-1) === panelSelection.id
+            ? [...panelPath, target.id]
+            : [target.id];
+        setPanelPath(nextPath);
+        setSongDetail(null);
+        setLargeView(false);
 
         if (target.kind === "directory") {
-            pushPanelHistory();
             setShowSelectedDetail(false);
             setPanelSelectionId(target.id);
-            setPanelParentId(null);
+            setPanelSongs([]);
             return [];
         }
 
-        pushPanelHistory();
+        return selectLeaf(target.id, shuffle);
+    }
+
+    function openExplorerItem(id: string, shuffle = false): SongListing[] {
+        const target = findNode(id)?.node;
+        if (!target) return [];
+
+        setSelected(target.id);
+        setPanelPath([target.id]);
+        setSongDetail(null);
+        setLargeView(false);
+        if (target.kind === "directory") {
+            setPanelSelectionId(target.id);
+            setShowSelectedDetail(false);
+            setPanelSongs([]);
+            return [];
+        }
+
         return selectLeaf(target.id, shuffle);
     }
 
     function selectLeaf(id: string, _shuffle = false): SongListing[] {
-        const findLeaf = (
-            directory: ExplorerDirectory,
-            parentPath: string[] = [],
-        ): { leaf: ExplorerLeaf; path: string[] } | null => {
+        const findLeaf = (directory: ExplorerDirectory): ExplorerLeaf | null => {
             for (const child of directory.children) {
                 if (child.id === id && child.kind === "leaf") {
-                    return { leaf: child, path: parentPath };
+                    return child;
                 }
 
                 if (child.kind === "directory") {
-                    const result = findLeaf(child, [...parentPath, child.id]);
+                    const result = findLeaf(child);
                     if (result) return result;
                 }
             }
@@ -333,21 +395,21 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         };
 
         const rootType = id.startsWith("playlist:") ? "playlists" : "artists";
-        const root = rootType === "artists" ? folder.artistsRoot : folder.playlistsRoot;
-        const result = findLeaf(root);
-        if (!result) return [];
+        const root = rootType === "artists" ? searchFolder.artistsRoot : searchFolder.playlistsRoot;
+        const leaf = findLeaf(root);
+        if (!leaf) return [];
 
-        setPanelSelectionId(result.leaf.id);
-        setPanelParentId(result.path.at(-1) ?? null);
+        setSongDetail(null);
+        setPanelSelectionId(leaf.id);
         setShowSelectedDetail(true);
-        if (result.leaf.id.startsWith("album:")) {
+        if (leaf.id.startsWith("album:")) {
             setRecentAlbumIds((ids) => {
-                const nextIds = [result.leaf.id, ...ids.filter((albumId) => albumId !== result.leaf.id)].slice(0, 8);
+                const nextIds = [leaf.id, ...ids.filter((albumId) => albumId !== leaf.id)].slice(0, 8);
                 window.electron.settings.set({ recentAlbums: nextIds });
                 return nextIds;
             });
         }
-        const songsForView = [...result.leaf.songs];
+        const songsForView = [...leaf.songs];
         const orderedSongs = _shuffle ? shuffleArray(songsForView) : songsForView;
         setPanelSongs(orderedSongs);
         return orderedSongs;
@@ -355,7 +417,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     function startQueue(songsForQueue: SongListing[], selectedId?: string) {
         setQueue(songsForQueue, selectedId ?? null);
-        if (selectedId) setSelected(selectedId);
+        const path = selectedId && panelPath.at(-1) !== selectedId ? [selectedId] : panelPath;
+        rememberPlaybackPage(path, panelSelectionId, songDetail);
     }
 
     function reorderPlaylist(songsInOrder: SongListing[]) {
@@ -367,6 +430,54 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         setPanelSongs(songsInOrder);
         setQueue(songsInOrder, panelSelectionId);
         return true;
+    }
+
+    function addSongsToPlaylist(listings: SongListing[]) {
+        if (!panelSelectionId?.startsWith("playlist:")) return false;
+
+        const name = panelSelectionId.slice("playlist:".length);
+        const existingIds = new Set(panelSongs.map(({ song }) => song.id));
+        const additions: SongListing[] = [];
+
+        if (name.toLowerCase() === "favorites") {
+            for (const listing of listings) {
+                if (existingIds.has(listing.song.id) || isFavorite(listing.song.id)) continue;
+                additions.push(listing);
+                toggleFavorite(listing.song.id);
+            }
+        } else {
+            const playlist = [...playlists].find(
+                (entry) => entry.name.toLowerCase() === name.toLowerCase(),
+            );
+            const normalizeSongKey = (key: string) => key.replace(/\\/g, "/").toLowerCase();
+            const existingKeys = new Set(playlist?.songs.map(normalizeSongKey) ?? []);
+            for (const listing of listings) {
+                const normalizedId = normalizeSongKey(listing.song.id);
+                const normalizedPath = normalizeSongKey(listing.song.path);
+                if (
+                    existingIds.has(listing.song.id) ||
+                    existingKeys.has(normalizedId) ||
+                    existingKeys.has(normalizedPath)
+                ) continue;
+                additions.push(listing);
+                addSavedPlaylistSong(name, listing.song.id);
+                existingKeys.add(normalizedId);
+                existingKeys.add(normalizedPath);
+            }
+        }
+
+        if (additions.length === 0) return false;
+        const nextSongs = [...panelSongs, ...additions];
+        setPanelSongs(nextSongs);
+        setQueue(nextSongs, panelSelectionId);
+        return true;
+    }
+
+    function addSongToPlaylist(listing: SongListing) {
+        if (panelSongs.some(({ song }) => song.id === listing.song.id)) {
+            return removePlaylistSong(listing.song.id);
+        }
+        return addSongsToPlaylist([listing]);
     }
 
     function removePlaylistSong(songId: string) {
@@ -381,10 +492,27 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         return true;
     }
 
+    function renamePlaylist(name: string, newName: string): boolean {
+        if (!renameSavedPlaylist(name, newName)) return false;
+
+        const oldId = `playlist:${name}`;
+        const newId = `playlist:${newName.trim()}`;
+        setPanelSelectionId((id) => id === oldId ? newId : id);
+        setPanelPath((path) => path.map((id) => id === oldId ? newId : id));
+        setSelected((id) => id === oldId ? newId : id);
+        updatePlaybackPage(playbackPage ? {
+            ...playbackPage,
+            selectionId: playbackPage.selectionId === oldId ? newId : playbackPage.selectionId,
+            path: playbackPage.path.map((id) => id === oldId ? newId : id),
+        } : null);
+        return true;
+    }
+
     function resetToRoot(root: ExplorerDirectory) {
-        setPanelHistory([{ selectionId: null, parentId: null, showDetail: false, songs: [] }]);
+        setPanelPath([root.id]);
+        setSongDetail(null);
+        setLargeView(false);
         setPanelSelectionId(root.id);
-        setPanelParentId(null);
         setShowSelectedDetail(false);
         setPanelSongs([]);
     }
@@ -392,44 +520,42 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     function openTemporaryPlaylist(name: string, songsForQueue: SongListing[]) {
         const localPlaylistId = `playlist:${name}`;
         setQueue(songsForQueue, localPlaylistId);
-        setSelected(localPlaylistId);
+        setPanelPath([localPlaylistId]);
+        setSongDetail(null);
+        setLargeViewState(false);
         setPanelSelectionId(localPlaylistId);
-        setPanelParentId(null);
         setShowSelectedDetail(true);
         setPanelSongs(songsForQueue);
+        updatePlaybackPage({
+            path: [localPlaylistId],
+            selectionId: localPlaylistId,
+            showDetail: true,
+            songDetail: null,
+            largeView: false,
+        });
     }
 
     function returnToParent() {
-        const previous = panelHistory.at(-1);
-        if (previous) {
-            setPanelHistory((history) => history.slice(0, -1));
+        const nextPath = panelPath.slice(0, -1);
+        setPanelPath(nextPath);
+        setLargeViewState(false);
+        const parent = nextPath.at(-1) ? findNode(nextPath.at(-1)!)?.node : null;
 
-            if (previous.selectionId === null) {
-                setPanelSelectionId(null);
-                setPanelParentId(null);
-                setShowSelectedDetail(false);
-                setPanelSongs([]);
-                return;
-            }
-
-            setPanelSelectionId(previous.selectionId);
-            setPanelParentId(previous.parentId);
-            setShowSelectedDetail(previous.showDetail);
-            setPanelSongs(previous.songs);
-            return;
-        }
-
-        if (panelParentId !== null) {
+        if (!parent) {
+            setSongDetail(null);
+            setSelected(null);
+            setPanelSelectionId(null);
             setShowSelectedDetail(false);
-            setPanelSelectionId(panelParentId);
-            setPanelParentId(null);
-            return;
+            setPanelSongs([]);
+        } else if (parent.kind === "directory") {
+            setSongDetail(null);
+            setSelected(parent.id);
+            setPanelSelectionId(parent.id);
+            setShowSelectedDetail(false);
+            setPanelSongs([]);
+        } else {
+            selectLeaf(parent.id);
         }
-
-        setShowSelectedDetail(false);
-        setPanelSelectionId(null);
-        setPanelParentId(null);
-        setPanelSongs([]);
     }
 
     function setViewType(view: ExplorerView) {
@@ -448,8 +574,83 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     }
 
     function openSelection(id: string): void {
-        pushPanelHistory();
+        const nextPath = panelSelection?.kind === "directory" &&
+            panelPath.at(-1) === panelSelection.id
+            ? [...panelPath, id]
+            : [id];
+        setPanelPath(nextPath);
+        setLargeViewState(false);
         selectLeaf(id);
+    }
+
+    function openSearchItem(type: ExplorerView | "song", id: string, listing?: SongListing) {
+        setFilter("");
+        setSelected(id);
+        setLargeViewState(false);
+
+        if (type === "song") {
+            if (!listing) return;
+            setPanelPath([`song:${listing.song.id}`]);
+            setSongDetail(listing);
+            setPanelSelectionId(null);
+            setShowSelectedDetail(true);
+            setPanelSongs([listing]);
+            setQueue([listing], `song:${listing.song.id}`);
+            updatePlaybackPage({
+                path: [`song:${listing.song.id}`],
+                selectionId: null,
+                showDetail: true,
+                songDetail: listing,
+                largeView: false,
+            });
+            return;
+        }
+
+        setCurrentViewType(type);
+        openExplorerItem(id);
+    }
+
+    function returnToPlaybackContext() {
+        if (!playbackPage) return;
+
+        setPanelPath(playbackPage.path);
+        setLargeViewState(playbackPage.largeView);
+
+        if (playbackPage.songDetail) {
+            setSongDetail(playbackPage.songDetail);
+            setPanelSelectionId(null);
+            setShowSelectedDetail(true);
+            setPanelSongs([playbackPage.songDetail]);
+            return;
+        }
+
+        setSongDetail(null);
+        if (!playbackPage.selectionId) {
+            setPanelSelectionId(null);
+            setShowSelectedDetail(false);
+            setPanelSongs([]);
+            return;
+        }
+
+        const target = findNode(playbackPage.selectionId)?.node;
+        if (target?.kind === "directory") {
+            setPanelSelectionId(target.id);
+            setShowSelectedDetail(false);
+            setPanelSongs([]);
+            return;
+        }
+
+        if (target?.kind === "leaf") {
+            selectLeaf(target.id);
+            setPanelPath(playbackPage.path);
+            setLargeViewState(playbackPage.largeView);
+            return;
+        }
+
+        setPanelSelectionId(null);
+        setShowSelectedDetail(false);
+        setPanelSongs([]);
+        setPanelPath([]);
     }
 
     return (
@@ -463,7 +664,11 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     showSelectedDetail,
                     panelSelection,
                     panelChildren,
-                    panelCanReturn: panelHistory.length > 0 || panelParentId !== null,
+                    searchFolder,
+                    songDetail,
+                    largeView,
+                    isPlaybackContext,
+                    panelCanReturn: panelPath.length > 0,
                     recentAlbums,
                     folder,
                     filter,
@@ -473,9 +678,16 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
                     setSelected,
                     setFilter,
                     traverse,
+                    openExplorerItem,
+                    openSearchItem,
+                    setLargeView,
+                    returnToPlaybackContext,
+                    renamePlaylist,
                     selectLeaf,
                     startQueue,
                     reorderPlaylist,
+                    addSongToPlaylist,
+                    addSongsToPlaylist,
                     removePlaylistSong,
                     openTemporaryPlaylist,
                     returnToParent,
