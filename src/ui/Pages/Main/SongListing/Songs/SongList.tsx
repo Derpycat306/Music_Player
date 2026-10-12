@@ -3,6 +3,7 @@ import { usePlayer } from '../../../../AudioPlayer/useAudioPlayer';
 import { useExplorer } from '../../ExplorerContext/UseExplorer';
 import SongItem from './Item/SongItem';
 import styles from './SongList.module.css'
+import { useVirtualList } from '../../useVirtualList';
 
 function CurrentTitle({ title }: { title: string }) {
     const titleRef = useRef<HTMLElement>(null);
@@ -46,6 +47,17 @@ function CurrentTitle({ title }: { title: string }) {
 function SongList () {
     const {currentQueue, currentSong} = usePlayer();
     const {largeView, setLargeView, isPlaybackContext, returnToPlaybackContext} = useExplorer();
+    const songsRef = useRef<HTMLDivElement>(null);
+    const songsWindowRef = useRef<HTMLDivElement>(null);
+    const rowHeight = 64;
+    const visibleRange = useVirtualList(
+        songsRef,
+        songsWindowRef,
+        currentQueue.length,
+        rowHeight,
+        6,
+        currentSong !== null && currentQueue.length > 1,
+    );
 
     function handleViewAction() {
         if (!isPlaybackContext) {
@@ -87,12 +99,25 @@ function SongList () {
                     </button>
                 </div>
             </div>
-            <div className={styles.songs}>
-                {
-                    currentQueue.map(songListing => (
-                        <SongItem key={songListing.song.id} songListing={songListing} />
-                    ))
-                }
+            <div className={styles.songs} ref={songsRef}>
+                <div
+                    className={styles.songsWindow}
+                    ref={songsWindowRef}
+                    style={{ height: `${Math.max(0, currentQueue.length * rowHeight - 6)}px` }}
+                >
+                    {currentQueue.slice(visibleRange.start, visibleRange.end).map((songListing, offset) => {
+                        const index = visibleRange.start + offset;
+                        return (
+                            <div
+                                className={styles.songRow}
+                                key={songListing.song.id}
+                                style={{ top: `${index * rowHeight}px` }}
+                            >
+                                <SongItem songListing={songListing} />
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     )

@@ -8,14 +8,36 @@ import { savedData } from "./saveHandler.js";
 let filePath: string | null = null;
 let watcher: fs.FSWatcher | null = null;
 let mainWindow: BrowserWindow | null = null;
+let reloadTimer: NodeJS.Timeout | null = null;
+let scanInProgress = false;
+let scanRequested = false;
+let activeScan: { root: string; promise: Promise<{ songs: Song[]; covers: AlbumCover[] }> } | null = null;
+
+function scanLibrary(root: string): Promise<{ songs: Song[]; covers: AlbumCover[] }> {
+    if (activeScan?.root === root) return activeScan.promise;
+
+    const promise = scanDirectory(root).finally(() => {
+        if (activeScan?.promise === promise) activeScan = null;
+    });
+    activeScan = { root, promise };
+    return promise;
+}
 
 export function setFilepath(fp: string | null, save: boolean = true) {
     filePath = fp;
+    if (reloadTimer) {
+        clearTimeout(reloadTimer);
+        reloadTimer = null;
+    }
     watcher?.close();
 
     if (fp !== null) {
         watcher = fs.watch(fp, () => {
-            readFiles();
+            if (reloadTimer) clearTimeout(reloadTimer);
+            reloadTimer = setTimeout(() => {
+                reloadTimer = null;
+                void readFiles();
+            }, 250);
         });
     }
 
@@ -69,11 +91,11 @@ async function scanDirectory(
     artist?: string,
     album?: string,
     inheritedArt?: string,
+    result: { songs: Song[]; covers: AlbumCover[] } = { songs: [], covers: [] },
 ): Promise<{ songs: Song[]; covers: AlbumCover[] }> {
     const entries = await fs.promises.readdir(dir, { withFileTypes: true });
 
-    const songs: Song[] = [];
-    const covers: AlbumCover[] = [];
+    const { songs, covers } = result;
     const directoryArt = entries.find((entry) =>
         entry.isFile() && isImageFile(entry.name),
     );
@@ -110,42 +132,39 @@ async function scanDirectory(
             switch (depth) {
                 case 0:
                     {
-                        const result = await scanDirectory(
+                        await scanDirectory(
                             fullPath,
                             1,
                             entry.name,
                             album,
                             effectiveArt,
+                            result,
                         );
-                        songs.push(...result.songs);
-                        covers.push(...result.covers);
                     }
                     break;
                 case 1:
                     {
-                        const result = await scanDirectory(
+                        await scanDirectory(
                             fullPath,
                             2,
                             artist,
                             entry.name,
                             effectiveArt,
+                            result,
                         );
-                        songs.push(...result.songs);
-                        covers.push(...result.covers);
                     }
                     break;
 
                 default:
                     {
-                        const result = await scanDirectory(
+                        await scanDirectory(
                             fullPath,
                             depth + 1,
                             artist,
                             album,
                             effectiveArt,
+                            result,
                         );
-                        songs.push(...result.songs);
-                        covers.push(...result.covers);
                     }
             }
         } else if (isAudioFile(entry.name)) {
@@ -158,7 +177,7 @@ async function scanDirectory(
 
 ipcMain.handle("list:get", async () => {
     if(filePath){
-        return await scanDirectory(filePath)
+        return await scanLibrary(filePath)
     }else{
         return {
             songs: [],
@@ -168,18 +187,32 @@ ipcMain.handle("list:get", async () => {
 })
 
 export async function readFiles() {
-    if (mainWindow) {
-        if (filePath !== null) {
-            const files = await scanDirectory(filePath);
-            mainWindow.webContents.send("list:update", files);
-        } else {
-            mainWindow.webContents.send("list:update", {
-                songs: [],
-                covers: [],
-            });
-        }
-    } else {
-        console.error("Could not load window");
+    if (scanInProgress) {
+        scanRequested = true;
+        return;
+    }
+
+    scanInProgress = true;
+    try {
+        do {
+            scanRequested = false;
+            const root = filePath;
+            const files = root !== null
+                ? await scanLibrary(root)
+                : { songs: [], covers: [] };
+            if (root !== filePath) {
+                scanRequested = true;
+                continue;
+            }
+
+            if (mainWindow) {
+                mainWindow.webContents.send("list:update", files);
+            } else {
+                console.error("Could not load window");
+            }
+        } while (scanRequested);
+    } finally {
+        scanInProgress = false;
     }
 }
 

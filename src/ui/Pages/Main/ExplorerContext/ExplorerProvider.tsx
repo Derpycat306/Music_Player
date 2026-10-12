@@ -22,38 +22,58 @@ function shuffleArray<T>(array: T[]): T[] {
     return result;
 }
 function filterDirectory(directory: ExplorerDirectory, filter: string): ExplorerDirectory {
+    const children: ExplorerChild[] = [];
+    for (const child of directory.children) {
+        if (child.kind === "directory") {
+            const filteredChild = filterDirectory(child, filter);
+            if (filteredChild.children.length > 0) children.push(filteredChild);
+        } else if (child.songs.some(({ song }) => songMatchesFilter(song, filter))) {
+            children.push(child);
+        }
+    }
+
     return {
         ...directory,
-        children: directory.children
-            .map((child) => child.kind === "directory"
-                ? filterDirectory(child, filter)
-                : child)
-            .filter((child) => child.kind === "directory"
-                ? child.children.length > 0
-                : child.songs.some(({ song }) => songMatchesFilter(song, filter))),
+        children,
     };
 }
 
-function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filter: string): Folder {
+function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist>): Folder {
+    const coversById = new Map<string, string>();
+    for (const cover of covers) {
+        if (!coversById.has(cover.id)) coversById.set(cover.id, cover.coverPath);
+    }
+    const rootArt = coversById.get("root-art") ?? null;
+    const songsByNormalizedKey = new Map<string, Song>();
+    const listingsBySong = new Map<Song, SongListing>();
+    const normalizeSongKey = (key: string) => key.replace(/\\/g, "/").toLowerCase();
+
+    for (const song of songs) {
+        const normalizedId = normalizeSongKey(song.id);
+        const normalizedPath = normalizeSongKey(song.path);
+        if (!songsByNormalizedKey.has(normalizedId)) songsByNormalizedKey.set(normalizedId, song);
+        if (!songsByNormalizedKey.has(normalizedPath)) songsByNormalizedKey.set(normalizedPath, song);
+    }
+
     const getAlbumArt = (song: Song) => {
         const artist = song.artist;
         const album = song.album;
-        const albumArt = album
-            ? covers.find((cover) =>
-                cover.id === `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
-            )
-            : undefined;
-        const artistArt = artist
-            ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
-            : undefined;
-        const rootArt = covers.find((cover) => cover.id === "root-art");
-        return albumArt?.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
+        return (album
+            ? coversById.get(`album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`)
+            : undefined) ??
+            (artist ? coversById.get(`artist-art:${encodeURIComponent(artist)}`) : undefined) ??
+            rootArt;
     };
     const getArtistArt = (artist: string) =>
-        covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)?.coverPath ??
-        covers.find((cover) => cover.id === "root-art")?.coverPath ??
-        null;
-    const normalizeSongKey = (key: string) => key.replace(/\\/g, "/").toLowerCase();
+        coversById.get(`artist-art:${encodeURIComponent(artist)}`) ?? rootArt;
+    const getSongListing = (song: Song): SongListing => {
+        let listing = listingsBySong.get(song);
+        if (!listing) {
+            listing = { song, art: getAlbumArt(song) };
+            listingsBySong.set(song, listing);
+        }
+        return listing;
+    };
     const rootSongs: Song[] = [];
     const artistSongs = new Map<string, Song[]>();
     const artistAlbums = new Map<string, Map<string, Song[]>>();
@@ -78,19 +98,20 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
         artistAlbums.set(song.artist, albumsForArtist);
     }
 
-    const artistNames = new Set([...artistSongs.keys(), ...artistAlbums.keys()]);
+    const artistNames = new Set(artistSongs.keys());
+    for (const artistName of artistAlbums.keys()) artistNames.add(artistName);
     const artists: ArtistListing[] = [...artistNames].map((artistName) => {
         const children: AlbumListing[] = [];
         const albumsForArtist = artistAlbums.get(artistName) ?? new Map<string, Song[]>();
 
         for (const [albumName, albumSongs] of albumsForArtist) {
-            const art = getAlbumArt(albumSongs[0]!);
+            const art = getSongListing(albumSongs[0]!).art;
             children.push({
                 id: `album:${artistName}:${albumName}`,
                 name: albumName,
                 kind: "leaf",
                 art,
-                songs: albumSongs.map((song) => ({ song, art })),
+                songs: albumSongs.map(getSongListing),
             });
         }
 
@@ -101,7 +122,7 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
                 name: `Singles - ${artistName}`,
                 kind: "leaf",
                 art: null,
-                songs: singles.map((song) => ({ song, art: getAlbumArt(song) })),
+                songs: singles.map(getSongListing),
             });
         }
 
@@ -125,13 +146,13 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
             id: "artist:various-artists",
             name: "Various Artists",
             kind: "directory",
-            art: covers.find((cover) => cover.id === "root-art")?.coverPath ?? null,
+            art: rootArt,
             children: [{
                 id: "album:various-artists:singles",
                 name: "Common",
                 kind: "leaf",
                 art: null,
-                songs: rootSongs.map((song) => ({ song, art: getAlbumArt(song) })),
+                songs: rootSongs.map(getSongListing),
             }],
         });
     }
@@ -142,14 +163,12 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
         return Number(leftIsVarious) - Number(rightIsVarious);
     });
 
-    const playlistListings: PlaylistListing[] = playlists.map((playlist) => {
-        const playlistSongs = playlist.songs.flatMap((savedSong) => {
-            const saved = normalizeSongKey(savedSong);
-            const song = songs.find((entry) =>
-                saved === normalizeSongKey(entry.id) || saved === normalizeSongKey(entry.path),
-            );
-            return song ? [{ song, art: getAlbumArt(song) }] : [];
-        });
+    const playlistListings: PlaylistListing[] = [...playlists].map((playlist) => {
+        const playlistSongs: SongListing[] = [];
+        for (const savedSong of playlist.songs) {
+            const song = songsByNormalizedKey.get(normalizeSongKey(savedSong));
+            if (song) playlistSongs.push(getSongListing(song));
+        }
 
         return {
             id: `playlist:${playlist.name}`,
@@ -182,12 +201,14 @@ function build (songs: Song[], covers: AlbumCover[], playlists: Playlist[], filt
         children: playlistListings,
     };
 
-    if (!filter) return { artistsRoot, albumsRoot, playlistsRoot };
+    return { artistsRoot, albumsRoot, playlistsRoot };
+}
 
+function filterFolder(folder: Folder, filter: string): Folder {
     return {
-        artistsRoot: filterDirectory(artistsRoot, filter),
-        albumsRoot: filterDirectory(albumsRoot, filter),
-        playlistsRoot: filterDirectory(playlistsRoot, filter),
+        artistsRoot: filterDirectory(folder.artistsRoot, filter),
+        albumsRoot: filterDirectory(folder.albumsRoot, filter),
+        playlistsRoot: filterDirectory(folder.playlistsRoot, filter),
     };
 }
 
@@ -247,12 +268,12 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     }
 
     const searchFolder = useMemo(
-        () => build(songs, covers, [...playlists], ""),
+        () => build(songs, covers, playlists),
         [songs, covers, playlists],
     );
     const folder = useMemo(
-        () => filter ? build(songs, covers, [...playlists], filter) : searchFolder,
-        [songs, covers, playlists, filter, searchFolder],
+        () => filter ? filterFolder(searchFolder, filter) : searchFolder,
+        [filter, searchFolder],
     );
 
     const currentRoot = currentViewType === "artists"

@@ -4,6 +4,7 @@ import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
 import SongContext from "../SongListing/Songs/Item/SongContext";
+import { useVirtualList } from "../useVirtualList";
 
 function artworkFor(child: ExplorerChild): string | null {
     if (child.kind === "leaf") return child.art ?? child.songs[0]?.art ?? null;
@@ -116,6 +117,7 @@ function TrackTable({
     onFavorite,
     isFavorite,
     onContextFavoriteChange,
+    scrollRef,
 }: {
     songs: SongListing[];
     canReorder?: boolean;
@@ -125,6 +127,7 @@ function TrackTable({
     onFavorite: (song: Song, isCurrentlyFavorite: boolean) => void;
     isFavorite: (songId: string) => boolean;
     onContextFavoriteChange: (song: Song, wasFavorite: boolean) => void;
+    scrollRef: React.RefObject<HTMLDivElement | null>;
 }) {
     const { playSong, currentSong } = usePlayer();
     const { startQueue, panelSelection } = useExplorer();
@@ -135,7 +138,10 @@ function TrackTable({
     const dragStartSongsRef = useRef<SongListing[] | null>(null);
     const previousPositionsRef = useRef<Map<string, number> | null>(null);
     const trackElementsRef = useRef(new Map<string, HTMLDivElement>());
+    const trackWindowRef = useRef<HTMLDivElement>(null);
     const visibleSongs = previewSongs ?? songs;
+    const rowHeight = 54;
+    const visibleRange = useVirtualList(scrollRef, trackWindowRef, visibleSongs.length, rowHeight);
 
     function play(listing: SongListing) {
         startQueue(songs, panelSelection?.id);
@@ -214,112 +220,120 @@ function TrackTable({
 
     return (
         <div className={styles.trackTable}>
-            {visibleSongs.map((listing, index) => {
-                const favorite = isFavorite(listing.song.id);
-                return (
-                    <div
-                        ref={(element) => {
-                            if (element) {
-                                trackElementsRef.current.set(listing.song.id, element);
-                            } else {
-                                trackElementsRef.current.delete(listing.song.id);
-                            }
-                        }}
-                        className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""} ${draggedSongId === listing.song.id ? styles.trackDragging : ""}`}
-                        key={listing.song.id}
-                        onContextMenu={(event) => {
-                            event.preventDefault();
-                            setContextMenu({ song: listing.song, x: event.clientX, y: event.clientY });
-                        }}
-                        onDragOver={(event) => previewDrop(listing.song.id, event)}
-                        onDrop={(event) => {
-                            if (!canReorder) return;
-                            event.preventDefault();
-                            finishReorder();
-                        }}
-                    >
-                        <span className={styles.trackNumber}>{index + 1}</span>
-                        {canReorder ? (
-                            <button
-                                type="button"
-                                className={styles.trackDragHandle}
-                                draggable
-                                aria-label={`Reorder ${listing.song.title}`}
-                                title="Drag to move"
-                                onDragStart={(event) => {
-                                    dragStartSongsRef.current = [...songs];
-                                    previewSongsRef.current = [...songs];
-                                    setPreviewSongs([...songs]);
-                                    setDraggedSongId(listing.song.id);
-                                    event.dataTransfer.effectAllowed = "move";
-                                    event.dataTransfer.setData("text/plain", listing.song.id);
-                                }}
-                                onDragEnd={() => {
-                                    if (dragStartSongsRef.current) finishReorder();
-                                }}
-                            >
-                                <span />
-                                <span />
-                                <span />
-                            </button>
-                        ) : (
-                            <span className={styles.trackDragSpacer} />
-                        )}
-                        <button
-                            type="button"
-                            className={styles.trackPlay}
-                            onClick={() => play(listing)}
-                            aria-label={`Play ${listing.song.title}`}
+            <div
+                className={styles.trackWindow}
+                ref={trackWindowRef}
+                style={{ height: `${Math.max(0, visibleSongs.length * rowHeight - 2)}px` }}
+            >
+                {visibleSongs.slice(visibleRange.start, visibleRange.end).map((listing, offset) => {
+                    const index = visibleRange.start + offset;
+                    const favorite = isFavorite(listing.song.id);
+                    return (
+                        <div
+                            ref={(element) => {
+                                if (element) {
+                                    trackElementsRef.current.set(listing.song.id, element);
+                                } else {
+                                    trackElementsRef.current.delete(listing.song.id);
+                                }
+                            }}
+                            className={`${styles.track} ${currentSong?.song.id === listing.song.id ? styles.trackCurrent : ""} ${draggedSongId === listing.song.id ? styles.trackDragging : ""}`}
+                            style={{ top: `${index * rowHeight}px` }}
+                            key={listing.song.id}
+                            onContextMenu={(event) => {
+                                event.preventDefault();
+                                setContextMenu({ song: listing.song, x: event.clientX, y: event.clientY });
+                            }}
+                            onDragOver={(event) => previewDrop(listing.song.id, event)}
+                            onDrop={(event) => {
+                                if (!canReorder) return;
+                                event.preventDefault();
+                                finishReorder();
+                            }}
                         >
-                            <span className={styles.trackTitle}>
-                                <strong>{listing.song.title}</strong>
-                                <small>{listing.song.artist ?? "Unknown Artist"}</small>
-                            </span>
-                            <span className={styles.trackAlbum}>{listing.song.album ?? "Single"}</span>
-                            <span className={styles.trackDuration}>{formatDuration(listing.song.duration)}</span>
-                        </button>
-                        <div className={styles.trackActions}>
-                            {editMode && (
+                            <span className={styles.trackNumber}>{index + 1}</span>
+                            {canReorder ? (
                                 <button
                                     type="button"
-                                    className={styles.trackRemoveButton}
-                                    aria-label={`Remove ${listing.song.title} from this list`}
-                                    title="Remove from this list"
-                                    onClick={() => onRemove?.(listing.song.id)}
+                                    className={styles.trackDragHandle}
+                                    draggable
+                                    aria-label={`Reorder ${listing.song.title}`}
+                                    title="Drag to move"
+                                    onDragStart={(event) => {
+                                        dragStartSongsRef.current = [...songs];
+                                        previewSongsRef.current = [...songs];
+                                        setPreviewSongs([...songs]);
+                                        setDraggedSongId(listing.song.id);
+                                        event.dataTransfer.effectAllowed = "move";
+                                        event.dataTransfer.setData("text/plain", listing.song.id);
+                                    }}
+                                    onDragEnd={() => {
+                                        if (dragStartSongsRef.current) finishReorder();
+                                    }}
                                 >
-                                    ×
+                                    <span />
+                                    <span />
+                                    <span />
                                 </button>
+                            ) : (
+                                <span className={styles.trackDragSpacer} />
                             )}
                             <button
                                 type="button"
-                                className={`${styles.trackAction} ${favorite ? styles.trackActionActive : ""}`}
-                                aria-label={favorite ? `Remove ${listing.song.title} from Favorites` : `Add ${listing.song.title} to Favorites`}
-                                aria-pressed={favorite}
-                                title={favorite ? "Remove from Favorites" : "Add to Favorites"}
-                                onClick={() => onFavorite(listing.song, favorite)}
+                                className={styles.trackPlay}
+                                onClick={() => play(listing)}
+                                aria-label={`Play ${listing.song.title}`}
                             >
-                                {favorite ? "★" : "☆"}
+                                <span className={styles.trackTitle}>
+                                    <strong>{listing.song.title}</strong>
+                                    <small>{listing.song.artist ?? "Unknown Artist"}</small>
+                                </span>
+                                <span className={styles.trackAlbum}>{listing.song.album ?? "Single"}</span>
+                                <span className={styles.trackDuration}>{formatDuration(listing.song.duration)}</span>
                             </button>
-                            <button
-                                type="button"
-                                className={styles.trackMenuButton}
-                                aria-label={`More actions for ${listing.song.title}`}
-                                title="More song actions"
-                                onClick={(event) => {
-                                    const bounds = event.currentTarget.getBoundingClientRect();
-                                    setContextMenu({
-                                        song: listing.song,
-                                        x: bounds.left,
-                                        y: bounds.bottom,
-                                    });
-                                }}
-                            >
-                                ⋯
-                            </button>
+                            <div className={styles.trackActions}>
+                                {editMode && (
+                                    <button
+                                        type="button"
+                                        className={styles.trackRemoveButton}
+                                        aria-label={`Remove ${listing.song.title} from this list`}
+                                        title="Remove from this list"
+                                        onClick={() => onRemove?.(listing.song.id)}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    className={`${styles.trackAction} ${favorite ? styles.trackActionActive : ""}`}
+                                    aria-label={favorite ? `Remove ${listing.song.title} from Favorites` : `Add ${listing.song.title} to Favorites`}
+                                    aria-pressed={favorite}
+                                    title={favorite ? "Remove from Favorites" : "Add to Favorites"}
+                                    onClick={() => onFavorite(listing.song, favorite)}
+                                >
+                                    {favorite ? "★" : "☆"}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.trackMenuButton}
+                                    aria-label={`More actions for ${listing.song.title}`}
+                                    title="More song actions"
+                                    onClick={(event) => {
+                                        const bounds = event.currentTarget.getBoundingClientRect();
+                                        setContextMenu({
+                                            song: listing.song,
+                                            x: bounds.left,
+                                            y: bounds.bottom,
+                                        });
+                                    }}
+                                >
+                                    ⋯
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </div>
             {contextMenu && (
                 <SongContext
                     song={contextMenu.song}
@@ -846,6 +860,7 @@ function MainPanel() {
                     onFavorite={toggleSongFavorite}
                     isFavorite={isFavorite}
                     onContextFavoriteChange={removeFavoriteFromOpenList}
+                    scrollRef={contentRef}
                 />
             </>
         );
