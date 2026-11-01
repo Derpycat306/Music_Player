@@ -5,12 +5,12 @@ A desktop music player for playing locally owned songs, built with **React, Type
 ## Features
 
 * **Local music library** — Select a local music folder and automatically discover supported audio files.
-* **Artist and album browsing** — Organize music using metadata embedded in audio files, or more stable by folder structure.
-* **Album artwork** — Automatically retrieve album artwork from local album folders, or generic art to apply to all folders below.
+* **Artist and album browsing** — Displays music by its folder structure and metadata.
+* **Album artwork** — Applies album or generic artwork from folders to songs in scope.
 * **Library navigation** — Browse and filter music by their artist, album, or song name.
 * **Playback controls** — Play, pause, seek, skip, and control volume.
 * **Customization** — Save your favorite songs for quick access, and create custom playlists.
-* **Library updates** — Any changes to the music folder immediately updates the list while the application is running.
+* **Library updates** — Automatically handles folder changes and additions while running.
 * **Automatic updates** — Check for and install new application releases.
 
 # Setup
