@@ -4,6 +4,7 @@ import { useExplorer } from '../../ExplorerContext/UseExplorer';
 import SongItem from './Item/SongItem';
 import styles from './SongList.module.css'
 import { useVirtualList } from '../../useVirtualList';
+import { artworkSource } from '../../../../artworkSource';
 
 function CurrentTitle({ title }: { title: string }) {
     const titleRef = useRef<HTMLElement>(null);
@@ -77,7 +78,7 @@ function SongList () {
                 <div className={styles.currentArt}>
                     {currentSong.art && (
                         <img
-                            src={`music:///song?path=${encodeURIComponent(currentSong.art)}`}
+                            src={artworkSource(currentSong.art)}
                             alt=""
                         />
                     )}

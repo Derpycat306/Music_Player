@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { usePlayer } from "../AudioPlayer/useAudioPlayer";
 import styles from "./PlayBar.module.css";
+import { artworkSource } from "../artworkSource";
 
 import { SoundOff, SoundMin, SoundLow, SoundHigh } from "iconoir-react";
 
@@ -59,7 +60,7 @@ function PlayBar() {
                     <>
                         {currentSong.art && (
                             <img
-                                src={`music:///song?path=${encodeURIComponent(currentSong.art)}`}
+                                src={artworkSource(currentSong.art)}
                                 alt=""
                             />
                         )}

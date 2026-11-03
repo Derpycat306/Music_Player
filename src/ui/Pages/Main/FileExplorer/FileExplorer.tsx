@@ -4,6 +4,7 @@ import styles from "./FileExplorer.module.css";
 import ListItem from "./ListItem";
 import PlaylistContext from "./LeafContext";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
+import { artworkSource } from "../../../artworkSource";
 
 function FileExplorer() {
     const { playSong } = usePlayer();
@@ -96,7 +97,7 @@ function FileExplorer() {
                                 onSelect={() => selectItem(child.id)}
                                 icon={child.art != null ? (
                                     <img
-                                        src={`music:///song?path=${encodeURIComponent(child.art)}`}
+                                        src={artworkSource(child.art)}
                                         alt=""
                                     />
                                 ) : null}

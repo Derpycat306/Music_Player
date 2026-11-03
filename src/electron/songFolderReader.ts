@@ -73,6 +73,10 @@ async function parseSong(
     album?: string,
 ): Promise<Song> {
     const metadata = await parseFile(fp);
+    const picture = metadata.common.picture?.[0];
+    const pictureMimeType = picture?.format.startsWith("image/")
+        ? picture.format
+        : "image/jpeg";
 
     return {
         id: fp,
@@ -82,6 +86,9 @@ async function parseSong(
         trackNumber: metadata.common.track.no ?? 0,
         path: fp,
         duration: metadata.format.duration ?? 0,
+        coverPath: picture
+            ? `data:${pictureMimeType};base64,${Buffer.from(picture.data).toString("base64")}`
+            : undefined,
     };
 }
 

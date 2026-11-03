@@ -2,6 +2,7 @@ import styles from "./SongItem.module.css";
 import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "../../../../../AudioPlayer/useAudioPlayer";
 import SongContext from "./SongContext";
+import { artworkSource } from "../../../../../artworkSource";
 
 function formatDuration(seconds: number): string {
     if (!Number.isFinite(seconds) || seconds < 0) return "--:--";
@@ -50,7 +51,7 @@ function SongItem(prop: {songListing: SongListing}) {
                     {art != null && (
                         <div className={styles.icon}>
                             <img
-                                src={`music:///song?path=${encodeURIComponent(art)}`}
+                                src={artworkSource(art)}
                                 alt=""
                             />
                         </div>

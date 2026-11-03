@@ -74,21 +74,26 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
         if (!songsByNormalizedKey.has(normalizedPath)) songsByNormalizedKey.set(normalizedPath, song);
     }
 
-    const getAlbumArt = (song: Song) => {
-        const artist = song.artist;
-        const album = song.album;
-        return (album
-            ? coversById.get(`album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`)
-            : undefined) ??
-            (artist ? coversById.get(`artist-art:${encodeURIComponent(artist)}`) : undefined) ??
-            rootArt;
-    };
-    const getArtistArt = (artist: string) =>
-        coversById.get(`artist-art:${encodeURIComponent(artist)}`) ?? rootArt;
+    const getArtistFolderArt = (artist: string) =>
+        coversById.get(`artist-art:${encodeURIComponent(artist)}`);
+    const getAlbumArt = (artist: string, album: string, albumSongs: Song[]) =>
+        coversById.get(`album-art:${encodeURIComponent(artist)}:${encodeURIComponent(album)}`) ??
+        albumSongs.find((song) => song.coverPath)?.coverPath ??
+        getArtistFolderArt(artist) ??
+        rootArt;
     const getSongListing = (song: Song): SongListing => {
         let listing = listingsBySong.get(song);
         if (!listing) {
-            listing = { song, art: getAlbumArt(song) };
+            const albumArt = song.album
+                ? coversById.get(`album-art:${encodeURIComponent(song.artist ?? "")}:${encodeURIComponent(song.album)}`)
+                : undefined;
+            listing = {
+                song,
+                art: albumArt ??
+                    song.coverPath ??
+                    (song.artist ? getArtistFolderArt(song.artist) : undefined) ??
+                    rootArt,
+            };
             listingsBySong.set(song, listing);
         }
         return listing;
@@ -124,7 +129,7 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
         const albumsForArtist = artistAlbums.get(artistName) ?? new Map<string, Song[]>();
 
         for (const [albumName, albumSongs] of albumsForArtist) {
-            const art = getSongListing(albumSongs[0]!).art;
+            const art = getAlbumArt(artistName, albumName, albumSongs);
             children.push({
                 id: `album:${artistName}:${albumName}`,
                 name: albumName,
@@ -155,7 +160,14 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
             id: `artist:${artistName}`,
             name: artistName,
             kind: "directory",
-            art: getArtistArt(artistName),
+            art: getArtistFolderArt(artistName) ??
+                children.find((child) =>
+                    child.id.startsWith("album:") &&
+                    !child.id.endsWith(":singles") &&
+                    child.art &&
+                    child.art !== rootArt,
+                )?.art ??
+                rootArt,
             children,
         };
     });

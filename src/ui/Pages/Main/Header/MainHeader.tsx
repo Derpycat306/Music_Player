@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MoreHoriz, Settings } from "iconoir-react";
+import { artworkSource } from "../../../artworkSource";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
@@ -44,7 +45,7 @@ function getSongArt(song: Song, covers: AlbumCover[]): string | null {
         ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
         : undefined;
     const rootArt = covers.find((cover) => cover.id === "root-art");
-    return albumArt?.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
+    return albumArt?.coverPath ?? song.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
 }
 
 function MainHeader() {
@@ -365,7 +366,7 @@ function MainHeader() {
                                 >
                                     <span className={styles.searchArt}>
                                         {result.art
-                                            ? <img src={`music:///song?path=${encodeURIComponent(result.art)}`} alt="" />
+                                            ? <img src={artworkSource(result.art)} alt="" />
                                             : <span aria-hidden="true">♫</span>}
                                     </span>
                                     <span className={styles.searchCopy}>

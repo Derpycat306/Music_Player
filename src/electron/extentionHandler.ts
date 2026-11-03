@@ -25,6 +25,7 @@ export function removeExtension(name: string): string {
 
 const IMAGE_EXTENSIONS = new Set([
     ".jpg",
+    ".jpeg",
     ".png",
     ".gif",
     ".webp",

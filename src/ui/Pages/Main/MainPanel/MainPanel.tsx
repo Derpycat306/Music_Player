@@ -1,6 +1,7 @@
 import styles from "./MainPanel.module.css";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Pause, Play, SkipNext, SkipPrev } from "iconoir-react";
+import { artworkSource } from "../../../artworkSource";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
@@ -66,7 +67,7 @@ function Card({ child, onSelect }: { child: ExplorerChild; onSelect: (child: Exp
     return (
         <button type="button" className={styles.card} onPointerDown={handlePointerDown} onClick={handleClick}>
             <div className={`${styles.cardArt} ${!art ? styles.cardArtEmpty : ""}`}>
-                {art && <img src={`music:///song?path=${encodeURIComponent(art)}`} alt="" />}
+                {art && <img src={artworkSource(art)} alt="" />}
                 {!art && <span>{child.kind === "directory" ? "♪" : "♫"}</span>}
             </div>
             <strong>{child.name}</strong>
@@ -90,7 +91,7 @@ function PlaylistCard({
         <div className={styles.playlistCard}>
             <button type="button" className={styles.playlistCardSelect} onClick={() => onSelect(child)}>
                 <div className={`${styles.cardArt} ${!art ? styles.cardArtEmpty : ""}`}>
-                    {art && <img src={`music:///song?path=${encodeURIComponent(art)}`} alt="" />}
+                    {art && <img src={artworkSource(art)} alt="" />}
                     {!art && <span>♫</span>}
                 </div>
                 <strong>{child.name}</strong>
@@ -725,14 +726,14 @@ function MainPanel() {
                 ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
                 : undefined;
             const rootArt = covers.find((cover) => cover.id === "root-art");
-            return albumArt?.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
+            return albumArt?.coverPath ?? song.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
         }
 
         return (
             <>
                 <section className={styles.hero}>
                     <div className={`${styles.heroArt} ${!art ? styles.cardArtEmpty : ""}`}>
-                        {art && <img src={`music:///song?path=${encodeURIComponent(art)}`} alt="" />}
+                        {art && <img src={artworkSource(art)} alt="" />}
                         {!art && <span>{isPlaylist ? "♫" : "♪"}</span>}
                     </div>
                     <div className={styles.heroCopy}>
@@ -943,7 +944,7 @@ function MainPanel() {
             <section className={`${styles.songDetail} ${isCollectionQueue ? styles.songDetailWithControls : ""}`}>
                 <div className={`${styles.songDetailArt} ${!currentSong.art ? styles.cardArtEmpty : ""}`}>
                     {currentSong.art
-                        ? <img src={`music:///song?path=${encodeURIComponent(currentSong.art)}`} alt="" />
+                        ? <img src={artworkSource(currentSong.art)} alt="" />
                         : <span aria-hidden="true">♫</span>}
                 </div>
                 <div className={styles.songDetailSide}>
@@ -964,7 +965,7 @@ function MainPanel() {
             <section className={styles.songDetail}>
                 <div className={`${styles.songDetailArt} ${!songDetail.art ? styles.cardArtEmpty : ""}`}>
                     {songDetail.art
-                        ? <img src={`music:///song?path=${encodeURIComponent(songDetail.art)}`} alt="" />
+                        ? <img src={artworkSource(songDetail.art)} alt="" />
                         : <span aria-hidden="true">♫</span>}
                 </div>
                 <div className={styles.songDetailCopy}>
