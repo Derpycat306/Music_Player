@@ -1,24 +1,28 @@
 # Music Player
 
-A desktop music player for organizing and playing a local music library, built with **React, TypeScript, JavaScript, CSS, HTML, and Electron**. The application provides a modern interface for browsing artists, albums, playlists, and individual songs within the users own filesystem.
+A desktop music player for playing locally owned songs, built with **React, TypeScript, JavaScript, CSS, HTML, and Electron**.
 
 ## Features
 
-* 🎵 **Local music library** — Select a local music folder and automatically discover supported audio files.
-* 📀 **Artist and album browsing** — Organize music using metadata embedded in audio files.
-* 🖼️ **Album artwork** — Automatically retrieve album artwork from local album folders.
-* ▶️ **Playback controls** — Play, pause, seek, skip, and control volume.
-* ❤️ **Favorites** — Save favorite songs for quick access.
-* 📋 **Playlists** — Create and manage custom playlists.
-* 🔍 **Library navigation** — Browse music by artist, album, and song.
-* 💾 **Persistent settings** — Store application settings, favorites, and other user data between sessions.
-* 🔄 **Automatic library updates** — Detect changes to the selected music directory.
-* ⬆️ **Automatic updates** — Check for and install new application releases.
+* **Local music library** — Select a local music folder and automatically discover supported audio files.
+* **Artist and album browsing** — Displays music by its folder structure and metadata.
+* **Album artwork** — Applies album or generic artwork from folders to songs in scope.
+* **Library navigation** — Browse and filter music by their artist, album, or song name.
+* **Playback controls** — Play, pause, seek, skip, and control volume.
+* **Customization** — Save your favorite songs for quick access, and create custom playlists.
+* **Library updates** — Automatically handles folder changes and additions while running.
+* **Automatic updates** — Check for and install new application releases.
 
 # Setup
 
 For best usage, the local music files should be organized in the following format to avoid metadata inconsistencies:
-Folder/
-  Artist/
-    Album/
-      songs or album cover
+
+Main_Folder/\
+&emsp;  Artist_Name/\
+&emsp;&emsp;    Album_Name/\
+&emsp;&emsp;&emsp;      Song_Files
+
+Songs placed outside in the main or artist folders will instead take from metadata, or simply display without an album or artist if none exists.\
+Cover art is also applied to all songs in the same folder, and to any subfolders that have no art.
+
+Then, select the main folder within settings as the root folder and everything is good to go!
