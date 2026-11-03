@@ -1,6 +1,7 @@
 import styles from "./MainPanel.module.css";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, SkipNext, SkipPrev } from "iconoir-react";
+import { createArtworkResolver } from "../../../artwork";
 import { artworkSource } from "../../../artworkSource";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
@@ -440,6 +441,7 @@ function MainPanel() {
         isFavorite,
         toggleFavorite,
     } = usePlayer();
+    const artwork = useMemo(() => createArtworkResolver(songs, covers), [songs, covers]);
     const pressedByPointer = useRef(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const [editMode, setEditMode] = useState(false);
@@ -715,18 +717,7 @@ function MainPanel() {
         }
 
         function artworkForSong(song: Song): string | null {
-            const artist = song.artist;
-            const album = song.album;
-            const albumArt = album
-                ? covers.find((cover) =>
-                    cover.id === `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
-                )
-                : undefined;
-            const artistArt = artist
-                ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
-                : undefined;
-            const rootArt = covers.find((cover) => cover.id === "root-art");
-            return albumArt?.coverPath ?? song.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
+            return artwork.forSong(song);
         }
 
         return (

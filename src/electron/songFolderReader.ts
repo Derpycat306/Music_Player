@@ -73,10 +73,24 @@ async function parseSong(
     album?: string,
 ): Promise<Song> {
     const metadata = await parseFile(fp);
-    const picture = metadata.common.picture?.[0];
-    const pictureMimeType = picture?.format.startsWith("image/")
+    const pictures = metadata.common.picture ?? [];
+    const picture = pictures.find((candidate) => candidate.type === "Cover (front)") ?? pictures[0];
+    const pictureData = picture ? Buffer.from(picture.data) : null;
+    let pictureMimeType = picture?.format.startsWith("image/")
         ? picture.format
         : "image/jpeg";
+    if (pictureData && !picture?.format.startsWith("image/")) {
+        if (pictureData.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+            pictureMimeType = "image/png";
+        } else if (pictureData[0] === 0xff && pictureData[1] === 0xd8) {
+            pictureMimeType = "image/jpeg";
+        } else if (
+            pictureData.toString("ascii", 0, 4) === "RIFF" &&
+            pictureData.toString("ascii", 8, 12) === "WEBP"
+        ) {
+            pictureMimeType = "image/webp";
+        }
+    }
 
     return {
         id: fp,
@@ -86,8 +100,8 @@ async function parseSong(
         trackNumber: metadata.common.track.no ?? 0,
         path: fp,
         duration: metadata.format.duration ?? 0,
-        coverPath: picture
-            ? `data:${pictureMimeType};base64,${Buffer.from(picture.data).toString("base64")}`
+        coverPath: pictureData
+            ? `data:${pictureMimeType};base64,${pictureData.toString("base64")}`
             : undefined,
     };
 }
@@ -103,9 +117,24 @@ async function scanDirectory(
     const entries = await fs.promises.readdir(dir, { withFileTypes: true });
 
     const { songs, covers } = result;
-    const directoryArt = entries.find((entry) =>
-        entry.isFile() && isImageFile(entry.name),
-    );
+    const directoryArt = entries
+        .filter((entry) => entry.isFile() && isImageFile(entry.name))
+        .sort((left, right) => {
+            const imageRank = (name: string) => {
+                const basename = path.parse(name).name.toLowerCase();
+                const exactNames = ["cover", "folder", "front", "album", "artwork"];
+                const exactIndex = exactNames.indexOf(basename);
+                if (exactIndex !== -1) return exactIndex;
+                const prefixedIndex = exactNames.findIndex((candidate) =>
+                    new RegExp(`^${candidate}(?:[ _-])`).test(basename),
+                );
+                return prefixedIndex === -1
+                    ? exactNames.length * 2
+                    : exactNames.length + prefixedIndex;
+            };
+            const rankDifference = imageRank(left.name) - imageRank(right.name);
+            return rankDifference || left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+        })[0];
     const effectiveArt = directoryArt
         ? path.join(dir, directoryArt.name)
         : inheritedArt;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react"
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
+import { createArtworkResolver } from "../../../artwork";
 import { ExplorerContext, type AlbumListing, type ArtistListing, type ExplorerChild, type ExplorerDirectory, type ExplorerLeaf, type ExplorerView, type Folder, type PlaylistListing } from "./ExplorerContext";
 
 /** Type and interface definitions */
@@ -65,6 +66,7 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
         if (!coversById.has(cover.id)) coversById.set(cover.id, cover.coverPath);
     }
     const rootArt = coversById.get("root-art") ?? null;
+    const artwork = createArtworkResolver(songs, covers);
     const songsByNormalizedKey = new Map<string, Song>();
     const listingsBySong = new Map<Song, SongListing>();
     for (const song of songs) {
@@ -74,26 +76,10 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
         if (!songsByNormalizedKey.has(normalizedPath)) songsByNormalizedKey.set(normalizedPath, song);
     }
 
-    const getArtistFolderArt = (artist: string) =>
-        coversById.get(`artist-art:${encodeURIComponent(artist)}`);
-    const getAlbumArt = (artist: string, album: string, albumSongs: Song[]) =>
-        coversById.get(`album-art:${encodeURIComponent(artist)}:${encodeURIComponent(album)}`) ??
-        albumSongs.find((song) => song.coverPath)?.coverPath ??
-        getArtistFolderArt(artist) ??
-        rootArt;
     const getSongListing = (song: Song): SongListing => {
         let listing = listingsBySong.get(song);
         if (!listing) {
-            const albumArt = song.album
-                ? coversById.get(`album-art:${encodeURIComponent(song.artist ?? "")}:${encodeURIComponent(song.album)}`)
-                : undefined;
-            listing = {
-                song,
-                art: albumArt ??
-                    song.coverPath ??
-                    (song.artist ? getArtistFolderArt(song.artist) : undefined) ??
-                    rootArt,
-            };
+            listing = { song, art: artwork.forSong(song) };
             listingsBySong.set(song, listing);
         }
         return listing;
@@ -129,7 +115,7 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
         const albumsForArtist = artistAlbums.get(artistName) ?? new Map<string, Song[]>();
 
         for (const [albumName, albumSongs] of albumsForArtist) {
-            const art = getAlbumArt(artistName, albumName, albumSongs);
+            const art = artwork.forAlbum(artistName, albumName);
             children.push({
                 id: `album:${artistName}:${albumName}`,
                 name: albumName,
@@ -160,14 +146,7 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
             id: `artist:${artistName}`,
             name: artistName,
             kind: "directory",
-            art: getArtistFolderArt(artistName) ??
-                children.find((child) =>
-                    child.id.startsWith("album:") &&
-                    !child.id.endsWith(":singles") &&
-                    child.art &&
-                    child.art !== rootArt,
-                )?.art ??
-                rootArt,
+            art: artwork.forArtist(artistName, children),
             children,
         };
     });

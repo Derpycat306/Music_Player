@@ -92,9 +92,17 @@ function getContentType(filePath: string): string {
     const extension = path.extname(filePath).toLowerCase();
     const imageTypes: Record<string, string> = {
         ".gif": "image/gif",
+        ".avif": "image/avif",
+        ".bmp": "image/bmp",
+        ".ico": "image/x-icon",
         ".jpeg": "image/jpeg",
+        ".jpe": "image/jpeg",
+        ".jfif": "image/jpeg",
         ".jpg": "image/jpeg",
         ".png": "image/png",
+        ".svg": "image/svg+xml",
+        ".tif": "image/tiff",
+        ".tiff": "image/tiff",
         ".webp": "image/webp",
     };
 

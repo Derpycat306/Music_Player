@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MoreHoriz, Settings } from "iconoir-react";
+import { createArtworkResolver } from "../../../artwork";
 import { artworkSource } from "../../../artworkSource";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
@@ -33,24 +34,10 @@ function clampNumber(value: number, min: number, max: number): number {
     return Math.min(Math.max(Math.round(value), min), max);
 }
 
-function getSongArt(song: Song, covers: AlbumCover[]): string | null {
-    const artist = song.artist;
-    const album = song.album;
-    const albumArt = album
-        ? covers.find((cover) =>
-            cover.id === `album-art:${encodeURIComponent(artist ?? "")}:${encodeURIComponent(album)}`,
-        )
-        : undefined;
-    const artistArt = artist
-        ? covers.find((cover) => cover.id === `artist-art:${encodeURIComponent(artist)}`)
-        : undefined;
-    const rootArt = covers.find((cover) => cover.id === "root-art");
-    return albumArt?.coverPath ?? song.coverPath ?? artistArt?.coverPath ?? rootArt?.coverPath ?? null;
-}
-
 function MainHeader() {
     const { songs, covers, playSong, createLocalPlaylist } = usePlayer();
     const { openTemporaryPlaylist, setViewType, searchFolder, openSearchItem } = useExplorer();
+    const artwork = useMemo(() => createArtworkResolver(songs, covers), [songs, covers]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [shuffleOpen, setShuffleOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -129,7 +116,7 @@ function MainHeader() {
                 artist.toLowerCase().includes(query) ||
                 album.toLowerCase().includes(query)
             ) {
-                const listing = { song, art: getSongArt(song, covers) };
+                const listing = { song, art: artwork.forSong(song) };
                 results.push({
                     kind: "Song",
                     id: song.id,
@@ -142,7 +129,7 @@ function MainHeader() {
         }
 
         return results.slice(0, 30);
-    }, [search, searchFolder, songs, covers]);
+    }, [search, searchFolder, songs, artwork]);
 
     useEffect(() => {
         function closeSearch(event: MouseEvent) {
@@ -200,7 +187,7 @@ function MainHeader() {
 
         const normalizedCount = clampNumber(songCount, 1, songs.length);
         const selectedSongs = shuffleArray(songs).slice(0, normalizedCount);
-        const queue = selectedSongs.map((song) => ({ song, art: getSongArt(song, covers) }));
+        const queue = selectedSongs.map((song) => ({ song, art: artwork.forSong(song) }));
 
         const playlistName = "Shuffle";
         createLocalPlaylist(playlistName, queue);
@@ -223,7 +210,7 @@ function MainHeader() {
         for (const album of selectedAlbums) {
             const orderedSongs = shuffleWithinAlbums ? shuffleArray(album.songs) : album.songs;
             for (const song of orderedSongs) {
-                queue.push({ song, art: getSongArt(song, covers) });
+                queue.push({ song, art: artwork.forSong(song) });
             }
         }
 

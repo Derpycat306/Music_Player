@@ -26,6 +26,8 @@ export function removeExtension(name: string): string {
 const IMAGE_EXTENSIONS = new Set([
     ".jpg",
     ".jpeg",
+    ".jpe",
+    ".jfif",
     ".png",
     ".gif",
     ".webp",
@@ -33,6 +35,8 @@ const IMAGE_EXTENSIONS = new Set([
     ".svg",
     ".bmp",
     ".ico",
+    ".tif",
+    ".tiff",
 ]);
 
 export function isImageFile(filename: string): boolean {
