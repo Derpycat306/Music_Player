@@ -10,8 +10,16 @@ import SongContext from "../SongListing/Songs/Item/SongContext";
 import { useVirtualList } from "../useVirtualList";
 
 function artworkFor(child: ExplorerChild): string | null {
-    if (child.kind === "leaf") return child.art ?? child.songs[0]?.art ?? null;
-    return child.children.find((entry) => entry.kind === "leaf")?.art ?? null;
+    if (child.kind === "leaf") {
+        return child.art ?? child.songs.find((listing) => listing.art)?.art ?? null;
+    }
+
+    return child.art ??
+        child.children.find((entry) => entry.kind === "leaf" && entry.art)?.art ??
+        child.children
+            .flatMap((entry) => entry.kind === "leaf" ? entry.songs : [])
+            .find((listing) => listing.art)?.art ??
+        null;
 }
 
 function cardType(child: ExplorerChild): string {
@@ -692,7 +700,7 @@ function MainPanel() {
 
     function DetailView() {
         if (panelSelection?.kind !== "leaf") return <HomeView />;
-        const art = panelSelection.art ?? panelSelection.songs[0]?.art;
+        const art = panelSelection.art ?? panelSelection.songs.find((listing) => listing.art)?.art ?? null;
         const isPlaylist = panelSelection.id.startsWith("playlist:");
         const selectedPlaylistName = panelSelection.name;
         const canReorder = isPlaylist && filter.length === 0;

@@ -91,7 +91,7 @@ function MainHeader() {
                     id: album.id,
                     name: album.name,
                     detail: `${artist || "Unknown Artist"} · ${album.songs.length} songs`,
-                    art: album.art ?? album.songs[0]?.art ?? null,
+                    art: album.art ?? album.songs.find((listing) => listing.art)?.art ?? null,
                 });
             }
         }
@@ -103,7 +103,7 @@ function MainHeader() {
                     id: playlist.id,
                     name: playlist.name,
                     detail: `${playlist.songs.length} songs`,
-                    art: playlist.art ?? playlist.songs[0]?.art ?? null,
+                    art: playlist.art ?? playlist.songs.find((listing) => listing.art)?.art ?? null,
                 });
             }
         }
