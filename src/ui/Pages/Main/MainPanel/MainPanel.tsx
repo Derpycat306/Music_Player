@@ -1,5 +1,6 @@
 import styles from "./MainPanel.module.css";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Pause, Play, SkipNext, SkipPrev } from "iconoir-react";
 import { usePlayer } from "../../../AudioPlayer/useAudioPlayer";
 import type { ExplorerChild, ExplorerLeaf } from "../ExplorerContext/ExplorerContext";
 import { useExplorer } from "../ExplorerContext/UseExplorer";
@@ -420,7 +421,13 @@ function MainPanel() {
         songs,
         covers,
         currentSong,
+        playing,
         playSong,
+        pause,
+        play,
+        playNext,
+        playPrevious,
+        queueSourceId,
         addPlaylist,
         deletePlaylist,
         autoplay,
@@ -453,6 +460,75 @@ function MainPanel() {
     const artists = folder.artistsRoot.children;
     const playlists = folder.playlistsRoot.children;
     const canGoBack = panelCanReturn || panelSelection?.id.startsWith("playlist:") === true;
+    const isCollectionQueue = currentSong !== null &&
+        (queueSourceId?.toLowerCase().startsWith("album:") === true ||
+            queueSourceId?.toLowerCase().startsWith("playlist:") === true);
+
+    function renderControlButtons(buttonClass: string, autoplayClass: string, layoutClass: string) {
+        return (
+            <div className={layoutClass}>
+                <button
+                    type="button"
+                    className={`${styles.secondaryAction} ${buttonClass}`}
+                    aria-label="Previous"
+                    title="Previous"
+                    onClick={playPrevious}
+                >
+                    <SkipPrev aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    className={`${styles.secondaryAction} ${buttonClass}`}
+                    aria-label={playing ? "Pause" : "Play"}
+                    title={playing ? "Pause" : "Play"}
+                    onClick={() => playing ? pause() : play()}
+                >
+                    {playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+                </button>
+                <button
+                    type="button"
+                    className={`${styles.secondaryAction} ${buttonClass}`}
+                    aria-label="Next"
+                    title="Next"
+                    onClick={playNext}
+                >
+                    <SkipNext aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    className={`${autoplay ? styles.primaryAction : styles.secondaryAction} ${autoplayClass}`}
+                    aria-pressed={autoplay}
+                    onClick={toggleAutoplay}
+                >
+                    Autoplay
+                </button>
+            </div>
+        );
+    }
+
+    function renderQuickControls() {
+        return (
+            <div className={styles.quickControls} role="group" aria-label="Playback controls">
+                {renderControlButtons(
+                    styles.quickControlButton,
+                    styles.quickAutoplayButton,
+                    styles.quickControlButtons,
+                )}
+            </div>
+        );
+    }
+
+    function renderLargeControls() {
+        return (
+            <aside className={styles.largeQuickControls} role="group" aria-label="Playback controls">
+                {renderControlButtons(
+                    styles.largeControlButton,
+                    styles.largeAutoplayButton,
+                    styles.largeControlButtons,
+                )}
+            </aside>
+        );
+    }
 
     function goBack() {
         returnToParent();
@@ -726,10 +802,6 @@ function MainPanel() {
                             <button type="button" className={styles.secondaryAction}
                                 onPointerDown={(event) => handleActionPointerDown(event, () => playSelection(panelSelection, true))}
                                 onClick={() => handleActionClick(() => playSelection(panelSelection, true))}>Shuffle</button>
-                            <button type="button"
-                                className={autoplay ? styles.primaryAction : styles.secondaryAction}
-                                onPointerDown={(event) => handleActionPointerDown(event, toggleAutoplay)}
-                                onClick={() => handleActionClick(toggleAutoplay)}>Autoplay</button>
                         </>
                     )}
                     {isPlaylist && panelSelection.songs.length > 0 && (
@@ -868,34 +940,22 @@ function MainPanel() {
 
     const view = largeView && currentSong
         ? (
-            <section className={styles.songDetail}>
+            <section className={`${styles.songDetail} ${isCollectionQueue ? styles.songDetailWithControls : ""}`}>
                 <div className={`${styles.songDetailArt} ${!currentSong.art ? styles.cardArtEmpty : ""}`}>
                     {currentSong.art
                         ? <img src={`music:///song?path=${encodeURIComponent(currentSong.art)}`} alt="" />
                         : <span aria-hidden="true">♫</span>}
                 </div>
-                <div className={styles.songDetailCopy}>
-                    <p className={styles.eyebrow}>Now Playing</p>
-                    <h1>{currentSong.song.title}</h1>
-                    <p>{currentSong.song.artist ?? "Unknown Artist"}</p>
-                    <p>{currentSong.song.album ?? "Single"}</p>
-                    <div className={styles.songDetailActions}>
-                        <button
-                            type="button"
-                            className={styles.primaryAction}
-                            onClick={() => void playSong(currentSong)}
-                        >
-                            Play
-                        </button>
-                        <button
-                            type="button"
-                            className={autoplay ? styles.primaryAction : styles.secondaryAction}
-                            aria-pressed={autoplay}
-                            onClick={toggleAutoplay}
-                        >
-                            Autoplay
-                        </button>
+                <div className={styles.songDetailSide}>
+                    <div className={styles.songDetailCopy}>
+                        <p className={styles.eyebrow}>Now Playing</p>
+                        <h1 className={styles.largeSongTitle} title={currentSong.song.title}>
+                            {currentSong.song.title}
+                        </h1>
+                        <p>{currentSong.song.artist ?? "Unknown Artist"}</p>
+                        <p>{currentSong.song.album ?? "Single"}</p>
                     </div>
+                    {isCollectionQueue && renderLargeControls()}
                 </div>
             </section>
         )
@@ -944,6 +1004,10 @@ function MainPanel() {
     const isEmptyPlaylist = panelSelection?.kind === "leaf" &&
         panelSelection.id.startsWith("playlist:") &&
         panelSelection.songs.length === 0;
+    const showQuickControls = !largeView &&
+        panelSelection?.kind === "leaf" &&
+            isCollectionQueue &&
+            queueSourceId?.toLowerCase() === panelSelection.id.toLowerCase();
 
     return (
         <div className={styles.main}>
@@ -962,6 +1026,7 @@ function MainPanel() {
                 )}
                 {view}
             </div>
+            {showQuickControls && renderQuickControls()}
         </div>
     );
 }

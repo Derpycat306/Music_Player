@@ -287,6 +287,12 @@
     padding: 24px 0;
 }
 
+.songDetailWithControls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: clamp(16px, 2.2vw, 32px);
+}
+
 .songDetailArt {
     display: grid;
     flex: 0 0 auto;
@@ -296,6 +302,20 @@
     overflow: hidden;
     background: linear-gradient(135deg, #5b3b79, #1c253e);
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+.songDetailWithControls .songDetailArt {
+    width: min(100%, 48vh, 420px);
+    min-width: 0;
+    justify-self: center;
+}
+
+.songDetailSide {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
 }
 
 .songDetailArt img {
@@ -315,11 +335,24 @@
     text-align: left;
 }
 
+.songDetailWithControls .songDetailCopy {
+    width: auto;
+}
+
 .songDetailCopy h1 {
     margin: 8px 0;
     color: #fff;
     font-size: clamp(2rem, 4vw, 4rem);
     overflow-wrap: anywhere;
+}
+
+.largeSongTitle {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    line-height: 1.05;
 }
 
 .songDetailCopy > p:not(.eyebrow) {
@@ -333,6 +366,122 @@
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 18px;
+}
+
+.quickControls {
+    position: absolute;
+    z-index: 3;
+    right: clamp(16px, 3vw, 36px);
+    bottom: 18px;
+    max-width: calc(100% - 32px);
+    padding: 10px;
+    border: 1px solid rgba(214, 183, 255, 0.28);
+    border-radius: 12px;
+    background: rgba(25, 20, 32, 0.94);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+}
+
+.quickControlButtons {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.quickControlButton,
+.quickAutoplayButton {
+    display: inline-grid;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    height: 40px;
+    min-height: 40px;
+    place-items: center;
+    padding: 0;
+}
+
+.primaryAction.quickControlButton,
+.secondaryAction.quickControlButton,
+.primaryAction.quickAutoplayButton,
+.secondaryAction.quickAutoplayButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.quickControlButton {
+    width: 40px;
+}
+
+.quickAutoplayButton {
+    width: 88px;
+}
+
+.quickControlButton > svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    stroke: currentColor;
+}
+
+.largeQuickControls {
+    display: flex;
+    min-width: 0;
+    min-height: 200px;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(16px, 2vw, 28px);
+    border: 1px solid rgba(214, 183, 255, 0.28);
+    border-radius: 16px;
+    background: rgba(25, 20, 32, 0.76);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.largeControlButtons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.largeControlButton,
+.largeAutoplayButton {
+    display: flex;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    min-height: 56px;
+    padding: 0;
+}
+
+.largeControlButton {
+    width: 56px;
+}
+
+.largeAutoplayButton {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.largeControlButton > svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    stroke: currentColor;
+}
+
+.primaryAction.largeControlButton,
+.secondaryAction.largeControlButton,
+.primaryAction.largeAutoplayButton,
+.secondaryAction.largeAutoplayButton {
+    min-height: 56px;
+    padding: 0;
 }
 
 .card strong,
@@ -889,6 +1038,11 @@
         gap: 20px;
     }
 
+    .songDetailWithControls {
+        display: flex;
+            align-items: center;
+    }
+
     .songDetailArt {
         flex: 0 0 min(68vw, 320px);
         width: min(68vw, 320px);
@@ -896,6 +1050,20 @@
 
     .songDetailCopy {
         width: 100%;
+    }
+
+    .songDetailWithControls .songDetailCopy {
+        width: 100%;
+    }
+
+    .songDetailSide {
+        width: 100%;
+    }
+
+    .largeQuickControls {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 0;
     }
 
     .hero h1 {
@@ -923,4 +1091,17 @@
         gap: 2px;
     }
 
+    .quickControls {
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        max-width: none;
+    }
+
+}
+
+@media (min-width: 701px) and (max-width: 1050px) {
+    .songDetailWithControls {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    }
 }

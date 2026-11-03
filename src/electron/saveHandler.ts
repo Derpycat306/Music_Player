@@ -7,8 +7,8 @@ const DEFAULT_SETTINGS : Settings = {
     volume: 100,
     autoplay: false,
     recentAlbums: [],
-    lastQueue: [],
-    lastSong: null,
+    lastQueueSourceId: null,
+    lastSongId: null,
     explorerWidth: 200,
     songListWidth: 200,
 }

@@ -10,6 +10,27 @@ function songMatchesFilter(song: Song, filter: string) {
         song.album?.toLowerCase().includes(filter);
 }
 
+function normalizeSongKey(key: string) {
+    return key.replace(/\\/g, "/").toLowerCase();
+}
+
+function findSongListing(directory: ExplorerDirectory, songId: string): SongListing | null {
+    const normalizedSongId = normalizeSongKey(songId);
+    for (const child of directory.children) {
+        if (child.kind === "leaf") {
+            const listing = child.songs.find(({ song }) =>
+                normalizeSongKey(song.id) === normalizedSongId ||
+                normalizeSongKey(song.path) === normalizedSongId,
+            );
+            if (listing) return listing;
+        } else {
+            const listing = findSongListing(child, songId);
+            if (listing) return listing;
+        }
+    }
+    return null;
+}
+
 function shuffleArray<T>(array: T[]): T[] {
     const result = [...array]; // don't modify the original
 
@@ -46,8 +67,6 @@ function build(songs: Song[], covers: AlbumCover[], playlists: Iterable<Playlist
     const rootArt = coversById.get("root-art") ?? null;
     const songsByNormalizedKey = new Map<string, Song>();
     const listingsBySong = new Map<Song, SongListing>();
-    const normalizeSongKey = (key: string) => key.replace(/\\/g, "/").toLowerCase();
-
     for (const song of songs) {
         const normalizedId = normalizeSongKey(song.id);
         const normalizedPath = normalizeSongKey(song.path);
@@ -219,7 +238,9 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         songs,
         covers,
         playlists,
+        libraryLoaded,
         setQueue,
+        restoreQueue,
         isFavorite,
         addPlaylist: addSavedPlaylistSong,
         renamePlaylist: renameSavedPlaylist,
@@ -238,7 +259,10 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
     const [largeView, setLargeViewState] = useState(false)
     const [playbackPage, setPlaybackPage] = useState<PlaybackPage | null>(null)
     const [playbackSettingsLoaded, setPlaybackSettingsLoaded] = useState(false)
+    const [savedQueueSourceId, setSavedQueueSourceId] = useState<string | null>(null)
+    const [savedSongId, setSavedSongId] = useState<string | null>(null)
     const playbackPageTouched = useRef(false)
+    const startupQueueRestored = useRef(false)
     const [filter, setFilter] = useState("");
 
     useEffect(() => {
@@ -246,6 +270,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         void window.electron.settings.get().then((settings) => {
             if (!active) return;
             setRecentAlbumIds(settings.recentAlbums ?? []);
+            setSavedQueueSourceId(settings.lastQueueSourceId ?? null);
+            setSavedSongId(settings.lastSongId ?? settings.lastSong?.song.id ?? null);
             if (!playbackPageTouched.current && settings.lastPlaybackPage) {
                 setPlaybackPage(settings.lastPlaybackPage);
             }
@@ -315,6 +341,69 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     const panelSelection = panelSelectionId ? findNode(panelSelectionId)?.node ?? null : null;
     const panelChildren = panelSelection?.kind === "directory" ? panelSelection.children : [];
+    useEffect(() => {
+        if (!playbackSettingsLoaded || !libraryLoaded || startupQueueRestored.current) return;
+        startupQueueRestored.current = true;
+
+        const savedPage = playbackPage;
+        const pathLocation = [...(savedPage?.path ?? [])].reverse().find((id) =>
+            id.startsWith("album:") || id.startsWith("playlist:") || id.startsWith("song:"),
+        );
+        const sourceId = [
+            savedQueueSourceId,
+            pathLocation,
+            savedPage?.selectionId,
+        ].filter((id): id is string => id !== null && id !== undefined).find((id) => {
+            if (id.startsWith("album:") || id.startsWith("playlist:")) {
+                return findNode(id)?.node.kind === "leaf";
+            }
+            return id.startsWith("song:") &&
+                findSongListing(searchFolder.artistsRoot, savedSongId ?? id.slice("song:".length)) !== null;
+        });
+        if (!sourceId) return;
+
+        if (sourceId.startsWith("album:") || sourceId.startsWith("playlist:")) {
+            const target = findNode(sourceId)?.node;
+            if (target?.kind !== "leaf") return;
+
+            restoreQueue(target.songs, target.id, savedSongId);
+            setPlaybackPage({
+                path: [target.id],
+                selectionId: target.id,
+                showDetail: true,
+                songDetail: null,
+                largeView: savedPage?.largeView ?? false,
+            });
+            return;
+        }
+
+        if (sourceId.startsWith("song:")) {
+            const listing = findSongListing(
+                searchFolder.artistsRoot,
+                savedSongId ?? sourceId.slice("song:".length),
+            );
+            if (!listing) return;
+
+            restoreQueue([listing], `song:${listing.song.id}`, listing.song.id);
+            setPlaybackPage({
+                path: [`song:${listing.song.id}`],
+                selectionId: null,
+                showDetail: true,
+                songDetail: listing,
+                largeView: false,
+            });
+        }
+    }, [
+        findNode,
+        libraryLoaded,
+        playbackPage,
+        playbackSettingsLoaded,
+        restoreQueue,
+        savedQueueSourceId,
+        savedSongId,
+        searchFolder,
+    ]);
+
     const isPlaybackContext = playbackPage !== null &&
         playbackPage.selectionId === panelSelectionId &&
         playbackPage.showDetail === showSelectedDetail &&
@@ -329,11 +418,16 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         }
     }
 
-    function rememberPlaybackPage(path: string[], selectionId: string | null, detail: SongListing | null) {
+    function rememberPlaybackPage(
+        path: string[],
+        selectionId: string | null,
+        detail: SongListing | null,
+        showDetail = detail !== null || showSelectedDetail,
+    ) {
         updatePlaybackPage({
             path,
             selectionId,
-            showDetail: detail !== null || showSelectedDetail,
+            showDetail,
             songDetail: detail,
             largeView,
         });
@@ -438,6 +532,16 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
 
     function startQueue(songsForQueue: SongListing[], selectedId?: string) {
         setQueue(songsForQueue, selectedId ?? null);
+        const target = selectedId ? findNode(selectedId)?.node : null;
+        if (target?.kind === "leaf") {
+            rememberPlaybackPage(
+                [target.id],
+                target.id,
+                null,
+                true,
+            );
+            return;
+        }
         const path = selectedId && panelPath.at(-1) !== selectedId ? [selectedId] : panelPath;
         rememberPlaybackPage(path, panelSelectionId, songDetail);
     }
@@ -662,6 +766,8 @@ export function ExplorerProvider({ children }: PropsWithChildren) {
         }
 
         if (target?.kind === "leaf") {
+            setSelected(target.id);
+            setCurrentViewType(target.id.startsWith("playlist:") ? "playlists" : "albums");
             selectLeaf(target.id);
             setPanelPath(playbackPage.path);
             setLargeViewState(playbackPage.largeView);

@@ -67,8 +67,12 @@ function SongList () {
         }
     }
 
+    const showSongList = currentSong &&
+        currentQueue.length > 0 &&
+        (currentQueue.length > 1 || !isPlaybackContext);
+
     return (
-        currentSong && currentQueue.length > 1 && <div className={styles.module}>
+        showSongList && <div className={styles.module}>
             <div className={styles.name}>
                 <div className={styles.currentArt}>
                     {currentSong.art && (

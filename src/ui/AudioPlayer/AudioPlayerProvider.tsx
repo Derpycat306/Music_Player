@@ -14,6 +14,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     const [songs, setSongs] = useState<Song[]>([]);
     const [covers, setCovers] = useState<AlbumCover[]>([]);
     const [currentSong, setCurrentSong] = useState<SongListing | null>(null);
+    const [queueSourceId, setQueueSourceId] = useState<string | null>(null);
+    const [libraryLoaded, setLibraryLoaded] = useState(false);
     const [playing, setPlaying] = useState<boolean>(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -112,7 +114,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         const init = async () => {
             const directory = await window.electron.getSongList();
             if (disposed) return;
-            updateDirectory(directory)
+            updateDirectory(directory);
             const fav: string[] = await window.electron.favorites.get();
             const pls: Playlist[] = await window.electron.playlists.get();
             const settings: Settings | null = await window.electron.settings.get();
@@ -124,10 +126,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             )));
             setVolume(settings.volume)
             setAutoplay(settings.autoplay ?? false);
-            if(settings.lastQueue.length > 0){
-                setQueue(settings.lastQueue)
-                setSongRef(settings.lastSong??settings.lastQueue.at(0)!)
-            }
+            setLibraryLoaded(true);
         }
         init();
 
@@ -196,8 +195,10 @@ export function PlayerProvider({ children }: PropsWithChildren) {
             window.electron.settings.set({
                 volume: volumeRef.current,
                 autoplay: autoplayRef.current,
-                lastQueue: queueRef.current,
-                lastSong: currentSongRef.current
+                lastQueueSourceId: queueSourceIdRef.current,
+                lastSongId: currentSongRef.current?.song.id ?? null,
+                lastQueue: [],
+                lastSong: null,
             });
             window.electron.favorites.set([...favoritesRef.current]);
             window.electron.playlists.set([...playlistsRef.current]);
@@ -220,6 +221,24 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         queueRef.current = [...queue];
         if (sourceId !== undefined) {
             queueSourceIdRef.current = sourceId;
+            setQueueSourceId(sourceId);
+        }
+    }
+
+    function restoreQueue(queue: SongListing[], sourceId: string, songId: string | null) {
+        setQueue(queue, sourceId);
+        const normalizedSongId = songId ? normalizeSongKey(songId) : null;
+        const selectedSong = queue.find((listing) =>
+            listing.song.id === songId ||
+            normalizeSongKey(listing.song.id) === normalizedSongId ||
+            normalizeSongKey(listing.song.path) === normalizedSongId,
+        ) ?? queue[0];
+        if (selectedSong) {
+            setSongRef(selectedSong);
+        } else {
+            currentSongRef.current = null;
+            setCurrentSong(null);
+            setCurrentTime(0);
         }
     }
 
@@ -329,9 +348,17 @@ export function PlayerProvider({ children }: PropsWithChildren) {
     }
 
     function toggleAutoplay() {
-        setAutoplay((enabled) => !enabled)
-        if(!playing){
-            playNext()
+        if (autoplay) {
+            setAutoplay(false);
+            return;
+        }
+
+        setAutoplay(true);
+        const audio = audioRef.current;
+        const songComplete = audio?.ended === true ||
+            (duration > 0 && currentTime >= duration);
+        if (songComplete) {
+            playNext();
         }
     }
 
@@ -430,6 +457,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         ));
         if (queueSourceIdRef.current?.toLowerCase() === `playlist:${name}`.toLowerCase()) {
             queueSourceIdRef.current = `playlist:${cleanedName}`;
+            setQueueSourceId(`playlist:${cleanedName}`);
         }
         return true;
     }
@@ -566,6 +594,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
         if (queueSourceIdRef.current?.toLowerCase() === `playlist:${name}`.toLowerCase()) {
             queueRef.current = [];
             queueSourceIdRef.current = null;
+            setQueueSourceId(null);
             audioRef.current?.pause();
             setPlaying(false);
             setCurrentSong(null);
@@ -586,6 +615,8 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 songs,
                 covers,
                 currentQueue: queueRef.current,
+                queueSourceId,
+                libraryLoaded,
                 currentSong,
                 playing,
                 currentTime,
@@ -595,6 +626,7 @@ export function PlayerProvider({ children }: PropsWithChildren) {
                 repeat,
                 playlists: playlistsWithFavorites,
                 setQueue,
+                restoreQueue,
                 queueSong,
                 playSong,
                 pause,

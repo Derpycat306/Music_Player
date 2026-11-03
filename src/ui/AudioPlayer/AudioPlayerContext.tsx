@@ -5,6 +5,8 @@ export interface PlayerContextType {
     covers: AlbumCover[];
     currentSong: SongListing | null;
     currentQueue: SongListing[];
+    queueSourceId: string | null;
+    libraryLoaded: boolean;
     playing: boolean;
     currentTime: number;
     duration: number;
@@ -14,6 +16,7 @@ export interface PlayerContextType {
     playlists: Set<Playlist>;
 
     setQueue: (queue: SongListing[], sourceId?: string | null) => void;
+    restoreQueue: (queue: SongListing[], sourceId: string, songId: string | null) => void;
     queueSong: (song: SongListing) => void;
     playSong: (song: SongListing) => void;
     pause: () => void;
