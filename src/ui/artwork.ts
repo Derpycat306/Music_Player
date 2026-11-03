@@ -52,7 +52,10 @@ export function createArtworkResolver(songs: Song[], covers: AlbumCover[]) {
             null;
     }
 
-    function forArtist(artist: string, albums: ExplorerLeaf[]): string | null {
+    function forArtist(
+        artist: string,
+        albums: Array<{ id: string; art?: string | null }>,
+    ): string | null {
         const artistArt = findCover(covers, `artist-art:${encodeURIComponent(artist)}`);
         const albumArt = albums.find((album) =>
             album.id.startsWith("album:") &&
